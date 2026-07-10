@@ -2,12 +2,14 @@ import type { PluginAction } from '../../../platform/pluginRuntime/runtime/plugi
 import type { PluginRuntimeContext } from '../../../platform/pluginRuntime/runtime/pluginRuntimeContext';
 import type { PluginParticipantChangeEvent, PluginRuntimeHooks } from '../../../platform/pluginRuntime/types';
 import {
+  DEFAULT_ARCHIVE_HISTORY_DISPLAY_NAME_TEMPLATE,
   DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT,
   parseSendGroupHistoryConfig,
   type SendGroupHistoryConfig
 } from './config';
 
 const pluginId = 'official.send-group-history';
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function createSendGroupHistoryHooks(context: PluginRuntimeContext): PluginRuntimeHooks {
   return {
@@ -17,11 +19,17 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
         return;
       }
 
+      if (exemptGroupChatIds(config).has(event.chatId)) {
+        return [auditSkipped(event, undefined, 'exempt-group')];
+      }
+
       if (!context.exportChatArchive) {
         return [auditSkipped(event, undefined, 'missing-runtime-api')];
       }
 
       const actions: PluginAction[] = [];
+      const titleOverride = historyDisplayName(event, config);
+      const since = historySince(event, config);
       for (const userWid of event.affectedWids) {
         const dedupeKey = deliveryDedupeKey(event, userWid);
         const deliveryAttempt = await context.ephemeralStore.increment(dedupeKey, config.dedupeTtlSeconds);
@@ -36,6 +44,8 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             actorWid: userWid,
             chatId: event.chatId,
             format: 'pdf',
+            ...(titleOverride ? { titleOverride } : {}),
+            ...(since ? { since } : {}),
             skipAuthorization: true
           });
 
@@ -91,6 +101,24 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
       return actions;
     }
   };
+}
+
+function exemptGroupChatIds(config: SendGroupHistoryConfig): Set<string> {
+  return new Set(config.exemptGroupChatIds.map((chatId) => chatId.trim()).filter(Boolean));
+}
+
+function historySince(event: PluginParticipantChangeEvent, config: SendGroupHistoryConfig): Date | undefined {
+  if (!config.historyDays) {
+    return undefined;
+  }
+  return new Date(event.receivedAt.getTime() - config.historyDays * DAY_MS);
+}
+
+function historyDisplayName(event: PluginParticipantChangeEvent, config: SendGroupHistoryConfig): string | undefined {
+  const groupDisplayName = event.groupDisplayName?.trim() || event.chatId;
+  const template = config.historyDisplayNameTemplate.trim() || DEFAULT_ARCHIVE_HISTORY_DISPLAY_NAME_TEMPLATE;
+  const rendered = template.replace(/\{groupDisplayName\}/g, groupDisplayName).trim();
+  return rendered || undefined;
 }
 
 function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGroupHistoryConfig): boolean {
