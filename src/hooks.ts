@@ -28,7 +28,13 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
 
       const actions: PluginAction[] = [];
       const since = historySince(event, config);
+      const botRecipients = botRecipientWids(event);
       for (const userWid of event.affectedWids) {
+        if (botRecipients.has(userWid)) {
+          actions.push(auditSkipped(event, userWid, 'self-recipient'));
+          continue;
+        }
+
         const dedupeKey = deliveryDedupeKey(event, userWid);
         const deliveryAttempt = await context.ephemeralStore.increment(dedupeKey, config.dedupeTtlSeconds);
         if (deliveryAttempt !== 1) {
@@ -131,7 +137,14 @@ function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGro
 }
 
 function deliveryDedupeKey(event: PluginParticipantChangeEvent, userWid: string): string {
-  return `delivery:${event.scopeId}:${event.chatId}:${userWid}`;
+  return `delivery:${event.chatId}:${userWid}`;
+}
+
+function botRecipientWids(event: PluginParticipantChangeEvent): Set<string> {
+  return new Set([
+    ...(event.botWid ? [event.botWid] : []),
+    ...(event.botWids ?? [])
+  ].map((wid) => wid.trim()).filter(Boolean));
 }
 
 function auditSkipped(
