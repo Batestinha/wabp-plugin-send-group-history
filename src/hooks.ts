@@ -1,6 +1,7 @@
 import type { PluginAction } from '../../../platform/pluginRuntime/runtime/pluginActionTypes';
 import type { PluginRuntimeContext } from '../../../platform/pluginRuntime/runtime/pluginRuntimeContext';
 import type { PluginParticipantChangeEvent, PluginRuntimeHooks } from '../../../platform/pluginRuntime/types';
+import type { PrivateRecipientResolution } from '../../../platform/identity/privateRecipientResolver';
 import {
   DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT,
   parseSendGroupHistoryConfig,
@@ -29,23 +30,24 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
       const actions: PluginAction[] = [];
       const since = historySince(event, config);
       const botRecipients = botRecipientWids(event);
-      for (const userWid of event.affectedWids) {
-        if (botRecipients.has(userWid)) {
-          actions.push(auditSkipped(event, userWid, 'self-recipient'));
+      for (const eventUserWid of event.affectedWids) {
+        const recipient = await resolveRecipient(context, eventUserWid);
+        if (recipient.aliases.some((alias) => botRecipients.has(alias))) {
+          actions.push(auditSkipped(event, recipient, 'self-recipient'));
           continue;
         }
 
-        const dedupeKey = deliveryDedupeKey(event, userWid);
+        const dedupeKey = deliveryDedupeKey(event, recipient);
         const deliveryAttempt = await context.ephemeralStore.increment(dedupeKey, config.dedupeTtlSeconds);
         if (deliveryAttempt !== 1) {
-          actions.push(auditSkipped(event, userWid, 'duplicate-event'));
+          actions.push(auditSkipped(event, recipient, 'duplicate-event'));
           continue;
         }
 
         try {
           const document = await context.exportChatArchive({
             scopeId: event.scopeId,
-            actorWid: userWid,
+            actorWid: recipient.canonicalWid,
             chatId: event.chatId,
             format: 'pdf',
             ...(since ? { since } : {}),
@@ -53,7 +55,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           });
 
           if (document.messageCount === 0) {
-            actions.push(auditSkipped(event, userWid, 'empty-archive', {
+            actions.push(auditSkipped(event, recipient, 'empty-archive', {
               messageCount: document.messageCount,
               recommendation: 'prepare-history'
             }));
@@ -62,19 +64,19 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
 
           const introText = config.introText.trim();
           if (introText.length > 0) {
-            const t = await context.i18n.translatorForIdentity(userWid, event.scopeId);
+            const t = await context.i18n.translatorForIdentity(recipient.canonicalWid, event.scopeId);
             const text = introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
               ? t('official.send-group-history.introText')
               : introText;
             actions.push({
               type: 'message.sendText',
-              chatId: userWid,
+              chatId: recipient.chatId,
               text: renderIntroText(text, event)
             });
           }
           actions.push({
             type: 'message.sendDocument',
-            chatId: userWid,
+            chatId: recipient.chatId,
             file: {
               filename: document.filename,
               mimeType: document.mimeType,
@@ -84,7 +86,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           actions.push({
             type: 'audit.record',
             action: 'send-group-history.sent',
-            targetJson: target(event, userWid),
+            targetJson: target(event, recipient),
             metadataJson: {
               filename: document.filename,
               sizeBytes: document.buffer.length,
@@ -96,7 +98,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           actions.push({
             type: 'audit.record',
             action: 'send-group-history.failed',
-            targetJson: target(event, userWid),
+            targetJson: target(event, recipient),
             metadataJson: { reason: errorMessage(error) }
           });
         }
@@ -136,8 +138,25 @@ function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGro
   return false;
 }
 
-function deliveryDedupeKey(event: PluginParticipantChangeEvent, userWid: string): string {
-  return `delivery:${event.chatId}:${userWid}`;
+async function resolveRecipient(
+  context: PluginRuntimeContext,
+  userWid: string
+): Promise<PrivateRecipientResolution> {
+  return context.resolvePrivateRecipient?.(userWid) ?? unresolvedRecipient(userWid);
+}
+
+function unresolvedRecipient(userWid: string): PrivateRecipientResolution {
+  return {
+    originalWid: userWid,
+    chatId: userWid,
+    canonicalWid: userWid,
+    aliases: userWid ? [userWid] : [],
+    dedupeKey: `wid:${userWid}`
+  };
+}
+
+function deliveryDedupeKey(event: PluginParticipantChangeEvent, recipient: PrivateRecipientResolution): string {
+  return `delivery:${event.chatId}:${recipient.dedupeKey}`;
 }
 
 function botRecipientWids(event: PluginParticipantChangeEvent): Set<string> {
@@ -149,26 +168,31 @@ function botRecipientWids(event: PluginParticipantChangeEvent): Set<string> {
 
 function auditSkipped(
   event: PluginParticipantChangeEvent,
-  userWid: string | undefined,
+  recipient: PrivateRecipientResolution | undefined,
   reason: string,
   metadata: Record<string, unknown> = {}
 ): PluginAction {
   return {
     type: 'audit.record',
     action: 'send-group-history.skipped',
-    targetJson: target(event, userWid),
+    targetJson: target(event, recipient),
     metadataJson: { reason, ...metadata }
   };
 }
 
-function target(event: PluginParticipantChangeEvent, userWid: string | undefined): Record<string, unknown> {
+function target(event: PluginParticipantChangeEvent, recipient: PrivateRecipientResolution | undefined): Record<string, unknown> {
   return {
     pluginId,
     scopeId: event.scopeId,
     chatId: event.chatId,
     eventId: event.eventId,
     participantAction: event.action,
-    ...(userWid ? { userWid } : {})
+    ...(recipient ? {
+      userWid: recipient.canonicalWid,
+      eventUserWid: recipient.originalWid,
+      deliveryChatId: recipient.chatId,
+      aliases: recipient.aliases
+    } : {})
   };
 }
 
