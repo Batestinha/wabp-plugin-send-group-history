@@ -35,7 +35,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             scopeId: event.scopeId,
             actorWid: userWid,
             chatId: event.chatId,
-            format: 'html',
+            format: 'pdf',
             skipAuthorization: true
           });
 
