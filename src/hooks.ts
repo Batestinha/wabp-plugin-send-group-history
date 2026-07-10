@@ -75,7 +75,6 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             type: 'message.sendTextAndDocument',
             chatId: recipient.chatId,
             ...(text ? { text } : {}),
-            requiredRemoteChatId: recipient.chatId,
             file: {
               filename: document.filename,
               mimeType: document.mimeType,
@@ -151,6 +150,7 @@ function unresolvedRecipient(userWid: string): PrivateRecipientResolution {
   return {
     originalWid: userWid,
     chatId: userWid,
+    deliveryChatIds: userWid ? [userWid] : [],
     canonicalWid: userWid,
     aliases: userWid ? [userWid] : [],
     dedupeKey: `wid:${userWid}`
@@ -193,6 +193,7 @@ function target(event: PluginParticipantChangeEvent, recipient: PrivateRecipient
       userWid: recipient.canonicalWid,
       eventUserWid: recipient.originalWid,
       deliveryChatId: recipient.chatId,
+      deliveryChatIds: recipient.deliveryChatIds,
       aliases: recipient.aliases
     } : {})
   };
