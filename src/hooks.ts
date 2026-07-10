@@ -63,34 +63,36 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           }
 
           const introText = config.introText.trim();
-          if (introText.length > 0) {
-            const t = await context.i18n.translatorForIdentity(recipient.canonicalWid, event.scopeId);
-            const text = introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
-              ? t('official.send-group-history.introText')
-              : introText;
-            actions.push({
-              type: 'message.sendText',
-              chatId: recipient.chatId,
-              text: renderIntroText(text, event)
-            });
-          }
+          const text = introText.length > 0
+            ? renderIntroText(
+                introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
+                  ? (await context.i18n.translatorForIdentity(recipient.canonicalWid, event.scopeId))('official.send-group-history.introText')
+                  : introText,
+                event
+              )
+            : undefined;
           actions.push({
-            type: 'message.sendDocument',
+            type: 'message.sendTextAndDocument',
             chatId: recipient.chatId,
+            ...(text ? { text } : {}),
+            requiredRemoteChatId: recipient.chatId,
             file: {
               filename: document.filename,
               mimeType: document.mimeType,
               buffer: document.buffer
-            }
-          });
-          actions.push({
-            type: 'audit.record',
-            action: 'send-group-history.sent',
-            targetJson: target(event, recipient),
-            metadataJson: {
-              filename: document.filename,
-              sizeBytes: document.buffer.length,
-              messageCount: document.messageCount
+            },
+            successAudit: {
+              action: 'send-group-history.sent',
+              targetJson: target(event, recipient),
+              metadataJson: {
+                filename: document.filename,
+                sizeBytes: document.buffer.length,
+                messageCount: document.messageCount
+              }
+            },
+            failureAudit: {
+              action: 'send-group-history.failed',
+              targetJson: target(event, recipient)
             }
           });
         } catch (error) {
