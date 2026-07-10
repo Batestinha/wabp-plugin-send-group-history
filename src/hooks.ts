@@ -2,7 +2,6 @@ import type { PluginAction } from '../../../platform/pluginRuntime/runtime/plugi
 import type { PluginRuntimeContext } from '../../../platform/pluginRuntime/runtime/pluginRuntimeContext';
 import type { PluginParticipantChangeEvent, PluginRuntimeHooks } from '../../../platform/pluginRuntime/types';
 import {
-  DEFAULT_ARCHIVE_HISTORY_DISPLAY_NAME_TEMPLATE,
   DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT,
   parseSendGroupHistoryConfig,
   type SendGroupHistoryConfig
@@ -28,7 +27,6 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
       }
 
       const actions: PluginAction[] = [];
-      const titleOverride = historyDisplayName(event, config);
       const since = historySince(event, config);
       for (const userWid of event.affectedWids) {
         const dedupeKey = deliveryDedupeKey(event, userWid);
@@ -44,7 +42,6 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             actorWid: userWid,
             chatId: event.chatId,
             format: 'pdf',
-            ...(titleOverride ? { titleOverride } : {}),
             ...(since ? { since } : {}),
             skipAuthorization: true
           });
@@ -60,12 +57,13 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           const introText = config.introText.trim();
           if (introText.length > 0) {
             const t = await context.i18n.translatorForIdentity(userWid, event.scopeId);
+            const text = introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
+              ? t('official.send-group-history.introText')
+              : introText;
             actions.push({
               type: 'message.sendText',
               chatId: userWid,
-              text: introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
-                ? t('official.send-group-history.introText')
-                : introText
+              text: renderIntroText(text, event)
             });
           }
           actions.push({
@@ -114,11 +112,9 @@ function historySince(event: PluginParticipantChangeEvent, config: SendGroupHist
   return new Date(event.receivedAt.getTime() - config.historyDays * DAY_MS);
 }
 
-function historyDisplayName(event: PluginParticipantChangeEvent, config: SendGroupHistoryConfig): string | undefined {
+function renderIntroText(text: string, event: PluginParticipantChangeEvent): string {
   const groupDisplayName = event.groupDisplayName?.trim() || event.chatId;
-  const template = config.historyDisplayNameTemplate.trim() || DEFAULT_ARCHIVE_HISTORY_DISPLAY_NAME_TEMPLATE;
-  const rendered = template.replace(/\{groupDisplayName\}/g, groupDisplayName).trim();
-  return rendered || undefined;
+  return text.replace(/\{groupDisplayName\}/g, groupDisplayName);
 }
 
 function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGroupHistoryConfig): boolean {

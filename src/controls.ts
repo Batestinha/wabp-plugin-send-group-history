@@ -47,10 +47,6 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
   control('sendOnAdd', 'Admin-added members', 'Send history when a member is added by an admin.', 30, { type: 'boolean' }, { widget: 'toggle' }, true),
   control('sendOnApproval', 'Approved requests', 'Send history after an admin approves a membership request.', 40, { type: 'boolean' }, { widget: 'toggle' }, true),
   control('ensureArchivePolicy', 'Ensure archive policy', 'When preparing or enabling this plugin, include this scope in future chat archive capture when needed.', 50, { type: 'boolean' }, { widget: 'toggle' }, true),
-  control('historyDisplayNameTemplate', 'History display name', 'Template for the private archive document title.', 55, { type: 'string', required: true }, {
-    widget: 'builder',
-    builderId: 'official.send-group-history.prepare-history.v1'
-  }, '{groupDisplayName}'),
   control('exemptGroupChatIds', 'Exempt groups', 'Managed groups in this affected scope that should not receive automatic history delivery.', 56, { type: 'array', items: { type: 'string' } }, {
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
@@ -59,7 +55,10 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
   }, null),
-  control('introText', 'Intro text', 'Private message sent before the archive document. Leave blank to send only the document.', 60, { type: 'string' }, { widget: 'text' }),
+  control('introText', 'Message sent with PDF', 'Private message sent before the archive document. Leave blank to send only the document.', 60, { type: 'string' }, {
+    widget: 'builder',
+    builderId: 'official.send-group-history.prepare-history.v1'
+  }),
   control(
     'dedupeTtlSeconds',
     'Dedupe TTL',
