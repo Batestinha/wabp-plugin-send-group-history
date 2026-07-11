@@ -80,6 +80,10 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
               mimeType: document.mimeType,
               buffer: document.buffer
             },
+            privateFailureGroupFallback: {
+              chatId: event.chatId,
+              mentionedWids: [preferredMentionWid(recipient)]
+            },
             successAudit: {
               action: 'send-group-history.sent',
               targetJson: target(event, recipient),
@@ -166,6 +170,12 @@ function botRecipientWids(event: PluginParticipantChangeEvent): Set<string> {
     ...(event.botWid ? [event.botWid] : []),
     ...(event.botWids ?? [])
   ].map((wid) => wid.trim()).filter(Boolean));
+}
+
+function preferredMentionWid(recipient: PrivateRecipientResolution): string {
+  return recipient.deliveryChatIds.find((wid) => wid.endsWith('@c.us')) ??
+    recipient.deliveryChatIds.find((wid) => wid.endsWith('@lid')) ??
+    recipient.canonicalWid;
 }
 
 function auditSkipped(
