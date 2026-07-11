@@ -80,7 +80,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
               mimeType: document.mimeType,
               buffer: document.buffer
             },
-            privateFailureGroupFallback: {
+            privateDeliveryFallback: {
               chatId: event.chatId,
               mentionedWids: [preferredMentionWid(recipient)]
             },
