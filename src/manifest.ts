@@ -17,6 +17,7 @@ export const sendGroupHistoryManifest: PluginManifest = {
   configSchema: sendGroupHistoryConfigSchema,
   dangerousActions: [],
   backgroundJobs: [],
+  cancellation: { workflows: [] },
   assistant: {
     summary: 'Automatically sends existing non-empty PDF chat archive exports to new members after they join or are approved.',
     useCases: [
