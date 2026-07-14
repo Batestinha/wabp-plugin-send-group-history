@@ -55,7 +55,7 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
   }, null),
-  control('introText', 'Message sent with PDF', 'Private message sent before the archive document. Leave blank to send only the document.', 60, { type: 'string' }, {
+  control('introText', 'PDF caption', 'Caption sent with the archive document. Leave blank to send only the document file.', 60, { type: 'string' }, {
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
   }),
