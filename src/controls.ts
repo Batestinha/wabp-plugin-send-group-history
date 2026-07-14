@@ -22,7 +22,7 @@ function control(
     configurable: true,
     storage: { kind: 'plugin-scope-config', pluginId: 'official.send-group-history', path },
     schema,
-    ui,
+    ui: { helpText: description, ...ui },
     ...(defaultValue !== undefined ? { defaultValue } : {}),
     restartRequirement: 'NO_RESTART',
     dangerous: false,
