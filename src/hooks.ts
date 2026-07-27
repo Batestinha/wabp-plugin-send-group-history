@@ -7,6 +7,7 @@ import {
   parseSendGroupHistoryConfig,
   type SendGroupHistoryConfig
 } from './config';
+import { sendableGroupHistoryMessageCount } from './systemMessages';
 
 const pluginId = 'official.send-group-history';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -54,9 +55,13 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             skipAuthorization: true
           });
 
-          if (document.messageCount === 0) {
-            actions.push(auditSkipped(event, recipient, 'empty-archive', {
+          const sendableMessageCount = sendableGroupHistoryMessageCount(document);
+          if (sendableMessageCount === 0) {
+            const reason = document.messageCount === 0 ? 'empty-archive' : 'system-only-archive';
+            actions.push(auditSkipped(event, recipient, reason, {
               messageCount: document.messageCount,
+              sendableMessageCount,
+              ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {}),
               recommendation: 'prepare-history'
             }));
             continue;
@@ -90,7 +95,9 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
               metadataJson: {
                 filename: document.filename,
                 sizeBytes: document.buffer.length,
-                messageCount: document.messageCount
+                messageCount: document.messageCount,
+                sendableMessageCount,
+                ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {})
               }
             },
             failureAudit: {
