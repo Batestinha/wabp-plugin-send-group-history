@@ -46,30 +46,41 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
         }
 
         try {
-          const document = await context.exportChatArchive({
+          const firstFormat = config.formats[0] ?? 'pdf';
+          const remainingFormats = config.formats.slice(1);
+          const firstDocument = await context.exportChatArchive({
             scopeId: event.scopeId,
             actorWid: recipient.canonicalWid,
             chatId: event.chatId,
-            format: 'pdf',
+            format: firstFormat,
             ...(since ? { since } : {}),
             skipAuthorization: true
           });
 
-          const sendableMessageCount = sendableGroupHistoryMessageCount(document);
+          const sendableMessageCount = sendableGroupHistoryMessageCount(firstDocument);
           if (sendableMessageCount === 0) {
-            const reason = document.messageCount === 0 ? 'empty-archive' : 'system-only-archive';
+            const reason = firstDocument.messageCount === 0 ? 'empty-archive' : 'system-only-archive';
             actions.push(auditSkipped(event, recipient, reason, {
-              messageCount: document.messageCount,
+              messageCount: firstDocument.messageCount,
               sendableMessageCount,
-              ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {}),
-              ...(document.placeholderMessageTypeCounts
-                ? { placeholderMessageTypeCounts: document.placeholderMessageTypeCounts }
+              ...(firstDocument.messageTypeCounts ? { messageTypeCounts: firstDocument.messageTypeCounts } : {}),
+              ...(firstDocument.placeholderMessageTypeCounts
+                ? { placeholderMessageTypeCounts: firstDocument.placeholderMessageTypeCounts }
                 : {}),
               recommendation: 'prepare-history'
             }));
             continue;
           }
 
+          const remainingDocuments = await Promise.all(remainingFormats.map((format) => context.exportChatArchive!({
+            scopeId: event.scopeId,
+            actorWid: recipient.canonicalWid,
+            chatId: event.chatId,
+            format,
+            ...(since ? { since } : {}),
+            skipAuthorization: true
+          })));
+          const documents = [firstDocument, ...remainingDocuments];
           const introText = config.introText.trim();
           const text = introText.length > 0
             ? renderIntroText(
@@ -79,10 +90,10 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
                 event
               )
             : undefined;
-          actions.push({
+          actions.push(...documents.map((document, index): PluginAction => ({
             type: 'message.sendTextAndDocument',
             chatId: recipient.chatId,
-            ...(text ? { text } : {}),
+            ...(index === 0 && text ? { text } : {}),
             file: {
               filename: document.filename,
               mimeType: document.mimeType,
@@ -96,6 +107,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
               action: 'send-group-history.sent',
               targetJson: target(event, recipient),
               metadataJson: {
+                format: document.format,
                 filename: document.filename,
                 sizeBytes: document.buffer.length,
                 messageCount: document.messageCount,
@@ -108,9 +120,10 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             },
             failureAudit: {
               action: 'send-group-history.failed',
-              targetJson: target(event, recipient)
+              targetJson: target(event, recipient),
+              metadataJson: { format: document.format }
             }
-          });
+          })));
         } catch (error) {
           await context.ephemeralStore.delete(dedupeKey);
           actions.push({

@@ -1,5 +1,11 @@
 import { defineControl } from '../../../platform/operatorConsole/controlCatalog/define';
 import type { ControlDescriptor, ControlSchemaMetadata, ControlUiHint } from '../../../platform/operatorConsole/controlCatalog/types';
+import { SEND_GROUP_HISTORY_EXPORT_FORMATS } from './config';
+
+const formatOptions = SEND_GROUP_HISTORY_EXPORT_FORMATS.map((format) => ({
+  value: format,
+  label: format.toUpperCase()
+}));
 
 function control(
   path: string,
@@ -47,6 +53,14 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
   control('sendOnAdd', 'Admin-added members', 'Send history when a member is added by an admin.', 30, { type: 'boolean' }, { widget: 'toggle' }, true),
   control('sendOnApproval', 'Approved requests', 'Send history after an admin approves a membership request.', 40, { type: 'boolean' }, { widget: 'toggle' }, true),
   control('ensureArchivePolicy', 'Ensure archive policy', 'When preparing or enabling this plugin, include this scope in future chat archive capture when needed.', 50, { type: 'boolean' }, { widget: 'toggle' }, true),
+  control('formats', 'Archive formats', 'One or more archive document formats to send to each new member.', 55, {
+    type: 'array',
+    min: 1,
+    items: { type: 'string', enum: formatOptions }
+  }, {
+    widget: 'builder',
+    builderId: 'official.send-group-history.prepare-history.v1'
+  }, ['pdf']),
   control('exemptGroupChatIds', 'Exempt groups', 'Managed groups in this affected scope that should not receive automatic history delivery.', 56, { type: 'array', items: { type: 'string' } }, {
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
@@ -55,7 +69,7 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
   }, null),
-  control('introText', 'PDF caption', 'Caption sent with the archive document. Leave blank to send only the document file.', 60, { type: 'string' }, {
+  control('introText', 'Archive caption', 'Caption sent with the first selected archive document. Leave blank to send only the documents.', 60, { type: 'string' }, {
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
   }),
