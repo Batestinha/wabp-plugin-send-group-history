@@ -1,6 +1,7 @@
 export interface SendGroupHistoryMessageSummary {
   messageCount: number;
   messageTypeCounts?: Record<string, number> | undefined;
+  placeholderMessageTypeCounts?: Record<string, number> | undefined;
 }
 
 const SYSTEM_MESSAGE_TYPES = new Set([
@@ -49,9 +50,19 @@ export function sendableGroupHistoryMessageCount(summary: SendGroupHistoryMessag
     }
   }
 
+  const nonSystemPlaceholderCount = Object.entries(summary.placeholderMessageTypeCounts ?? {})
+    .reduce((count, [messageType, rawPlaceholderCount]) => {
+      if (isSendGroupHistorySystemMessageType(messageType)) {
+        return count;
+      }
+      const messageTypeCount = nonNegativeInteger(summary.messageTypeCounts?.[messageType] ?? 0);
+      return count + Math.min(messageTypeCount, nonNegativeInteger(rawPlaceholderCount));
+    }, 0);
+
   // Older or third-party exporters may provide only partial type counts. Treat
   // unclassified rows as sendable so the plugin fails open for real messages.
-  return nonSystemCount + Math.max(0, messageCount - classifiedCount);
+  return Math.max(0, nonSystemCount - nonSystemPlaceholderCount) +
+    Math.max(0, messageCount - classifiedCount);
 }
 
 function normalizeMessageType(value: string): string {

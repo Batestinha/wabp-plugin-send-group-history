@@ -62,6 +62,9 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
               messageCount: document.messageCount,
               sendableMessageCount,
               ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {}),
+              ...(document.placeholderMessageTypeCounts
+                ? { placeholderMessageTypeCounts: document.placeholderMessageTypeCounts }
+                : {}),
               recommendation: 'prepare-history'
             }));
             continue;
@@ -97,7 +100,10 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
                 sizeBytes: document.buffer.length,
                 messageCount: document.messageCount,
                 sendableMessageCount,
-                ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {})
+                ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {}),
+                ...(document.placeholderMessageTypeCounts
+                  ? { placeholderMessageTypeCounts: document.placeholderMessageTypeCounts }
+                  : {})
               }
             },
             failureAudit: {
