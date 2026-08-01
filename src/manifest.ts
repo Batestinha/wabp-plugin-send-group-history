@@ -11,6 +11,21 @@ export const sendGroupHistoryManifest: PluginManifest = {
   descriptionKey: 'official.send-group-history.description',
   defaultMessages: sendGroupHistoryMessages,
   commands: [],
+  help: {
+    featureId: 'group-history',
+    titleKey: 'official.send-group-history.help.feature.title',
+    summaryKey: 'official.send-group-history.help.feature.summary',
+    order: 110,
+    aliases: ['welcome history', 'archive delivery'],
+    topics: [{
+      topicId: 'welcome-history',
+      titleKey: 'official.send-group-history.help.delivery.title',
+      summaryKey: 'official.send-group-history.help.delivery.summary',
+      instructionKeys: ['official.send-group-history.help.delivery.instruction'],
+      keywords: ['history', 'archive', 'new member', 'welcome'],
+      availability: { invocation: 'either', permission: 'plugin.configure' }
+    }]
+  },
   eventSubscriptions: ['participant.change'],
   requiredPermissions: ['plugin.configure'],
   requiredBotCapabilities: [],
