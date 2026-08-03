@@ -1,7 +1,7 @@
 import type { PluginAction } from '../../../platform/pluginRuntime/runtime/pluginActionTypes';
 import type { PluginRuntimeContext } from '../../../platform/pluginRuntime/runtime/pluginRuntimeContext';
 import type { PluginParticipantChangeEvent, PluginRuntimeHooks } from '../../../platform/pluginRuntime/types';
-import type { PrivateRecipientResolution } from '../../../platform/identity/privateRecipientResolver';
+import type { IdentityAddressResolution } from '../../../platform/identity/identityAddressService';
 import {
   DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT,
   parseSendGroupHistoryConfig,
@@ -92,16 +92,13 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             : undefined;
           actions.push(...documents.map((document, index): PluginAction => ({
             type: 'message.sendTextAndDocument',
-            chatId: recipient.chatId,
+            chatId: recipient.deliveryChatId,
+            requiredRemoteChatId: recipient.deliveryChatId,
             ...(index === 0 && text ? { text } : {}),
             file: {
               filename: document.filename,
               mimeType: document.mimeType,
               buffer: document.buffer
-            },
-            privateDeliveryFallback: {
-              chatId: event.chatId,
-              mentionedWids: [preferredMentionWid(recipient)]
             },
             successAudit: {
               action: 'send-group-history.sent',
@@ -172,22 +169,14 @@ function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGro
 async function resolveRecipient(
   context: PluginRuntimeContext,
   userWid: string
-): Promise<PrivateRecipientResolution> {
-  return context.resolvePrivateRecipient?.(userWid) ?? unresolvedRecipient(userWid);
+): Promise<IdentityAddressResolution> {
+  if (!context.resolveIdentityAddress) {
+    throw new Error('Authoritative identity address service is unavailable.');
+  }
+  return context.resolveIdentityAddress(userWid);
 }
 
-function unresolvedRecipient(userWid: string): PrivateRecipientResolution {
-  return {
-    originalWid: userWid,
-    chatId: userWid,
-    deliveryChatIds: userWid ? [userWid] : [],
-    canonicalWid: userWid,
-    aliases: userWid ? [userWid] : [],
-    dedupeKey: `wid:${userWid}`
-  };
-}
-
-function deliveryDedupeKey(event: PluginParticipantChangeEvent, recipient: PrivateRecipientResolution): string {
+function deliveryDedupeKey(event: PluginParticipantChangeEvent, recipient: IdentityAddressResolution): string {
   return `delivery:${event.chatId}:${recipient.dedupeKey}`;
 }
 
@@ -198,15 +187,9 @@ function botRecipientWids(event: PluginParticipantChangeEvent): Set<string> {
   ].map((wid) => wid.trim()).filter(Boolean));
 }
 
-function preferredMentionWid(recipient: PrivateRecipientResolution): string {
-  return recipient.deliveryChatIds.find((wid) => wid.endsWith('@c.us')) ??
-    recipient.deliveryChatIds.find((wid) => wid.endsWith('@lid')) ??
-    recipient.canonicalWid;
-}
-
 function auditSkipped(
   event: PluginParticipantChangeEvent,
-  recipient: PrivateRecipientResolution | undefined,
+  recipient: IdentityAddressResolution | undefined,
   reason: string,
   metadata: Record<string, unknown> = {}
 ): PluginAction {
@@ -218,7 +201,7 @@ function auditSkipped(
   };
 }
 
-function target(event: PluginParticipantChangeEvent, recipient: PrivateRecipientResolution | undefined): Record<string, unknown> {
+function target(event: PluginParticipantChangeEvent, recipient: IdentityAddressResolution | undefined): Record<string, unknown> {
   return {
     pluginId,
     scopeId: event.scopeId,
@@ -228,8 +211,7 @@ function target(event: PluginParticipantChangeEvent, recipient: PrivateRecipient
     ...(recipient ? {
       userWid: recipient.canonicalWid,
       eventUserWid: recipient.originalWid,
-      deliveryChatId: recipient.chatId,
-      deliveryChatIds: recipient.deliveryChatIds,
+      deliveryChatId: recipient.deliveryChatId,
       aliases: recipient.aliases
     } : {})
   };
