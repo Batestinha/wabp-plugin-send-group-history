@@ -1,7 +1,10 @@
 import type { PluginAction } from '../../../platform/pluginRuntime/runtime/pluginActionTypes';
 import type { PluginRuntimeContext } from '../../../platform/pluginRuntime/runtime/pluginRuntimeContext';
-import type { PluginParticipantChangeEvent, PluginRuntimeHooks } from '../../../platform/pluginRuntime/types';
-import type { IdentityAddressResolution } from '../../../platform/identity/identityAddressService';
+import type {
+  PluginParticipantChangeEvent,
+  PluginParticipantIdentity,
+  PluginRuntimeHooks
+} from '../../../platform/pluginRuntime/types';
 import {
   DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT,
   parseSendGroupHistoryConfig,
@@ -15,7 +18,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function createSendGroupHistoryHooks(context: PluginRuntimeContext): PluginRuntimeHooks {
   return {
     async onParticipantChange(event) {
-      const config = parseSendGroupHistoryConfig(await context.configFor(event.scopeId, event.actorWid));
+      const config = parseSendGroupHistoryConfig(await context.configFor(
+        event.scopeId,
+        event.actorIdentity?.identityId
+      ));
       if (!config.enabled || !shouldSendForEvent(event, config)) {
         return;
       }
@@ -30,10 +36,9 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
 
       const actions: PluginAction[] = [];
       const since = historySince(event, config);
-      const botRecipients = botRecipientWids(event);
-      for (const eventUserWid of event.affectedWids) {
-        const recipient = await resolveRecipient(context, eventUserWid);
-        if (recipient.aliases.some((alias) => botRecipients.has(alias))) {
+      const botIdentityIds = new Set(event.botIdentityIds);
+      for (const recipient of event.affectedIdentities) {
+        if (botIdentityIds.has(recipient.identityId)) {
           actions.push(auditSkipped(event, recipient, 'self-recipient'));
           continue;
         }
@@ -85,7 +90,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           const text = introText.length > 0
             ? renderIntroText(
                 introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
-                  ? (await context.i18n.translatorForIdentity(recipient.canonicalWid, event.scopeId))('official.send-group-history.introText')
+                  ? (await context.i18n.translatorForIdentity(recipient.identityId, event.scopeId))('official.send-group-history.introText')
                   : introText,
                 event
               )
@@ -166,30 +171,13 @@ function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGro
   return false;
 }
 
-async function resolveRecipient(
-  context: PluginRuntimeContext,
-  userWid: string
-): Promise<IdentityAddressResolution> {
-  if (!context.resolveIdentityAddress) {
-    throw new Error('Authoritative identity address service is unavailable.');
-  }
-  return context.resolveIdentityAddress(userWid);
-}
-
-function deliveryDedupeKey(event: PluginParticipantChangeEvent, recipient: IdentityAddressResolution): string {
-  return `delivery:${event.chatId}:${recipient.dedupeKey}`;
-}
-
-function botRecipientWids(event: PluginParticipantChangeEvent): Set<string> {
-  return new Set([
-    ...(event.botWid ? [event.botWid] : []),
-    ...(event.botWids ?? [])
-  ].map((wid) => wid.trim()).filter(Boolean));
+function deliveryDedupeKey(event: PluginParticipantChangeEvent, recipient: PluginParticipantIdentity): string {
+  return `delivery:${event.chatId}:identity:${recipient.identityId}`;
 }
 
 function auditSkipped(
   event: PluginParticipantChangeEvent,
-  recipient: IdentityAddressResolution | undefined,
+  recipient: PluginParticipantIdentity | undefined,
   reason: string,
   metadata: Record<string, unknown> = {}
 ): PluginAction {
@@ -201,7 +189,7 @@ function auditSkipped(
   };
 }
 
-function target(event: PluginParticipantChangeEvent, recipient: IdentityAddressResolution | undefined): Record<string, unknown> {
+function target(event: PluginParticipantChangeEvent, recipient: PluginParticipantIdentity | undefined): Record<string, unknown> {
   return {
     pluginId,
     scopeId: event.scopeId,
@@ -209,10 +197,10 @@ function target(event: PluginParticipantChangeEvent, recipient: IdentityAddressR
     eventId: event.eventId,
     participantAction: event.action,
     ...(recipient ? {
+      identityId: recipient.identityId,
       userWid: recipient.canonicalWid,
-      eventUserWid: recipient.originalWid,
-      deliveryChatId: recipient.deliveryChatId,
-      aliases: recipient.aliases
+      sourceWid: recipient.sourceWid,
+      deliveryChatId: recipient.deliveryChatId
     } : {})
   };
 }
