@@ -10,6 +10,13 @@ import {
   parseSendGroupHistoryConfig,
   type SendGroupHistoryConfig
 } from './config';
+import { OUTBOUND_DOCUMENT_MAX_BYTES } from '../../../platform/transport/transportFileLoader';
+import {
+  appendSendGroupHistoryOmissionNotice,
+  prepareSendGroupHistoryDocuments,
+  sendGroupHistoryOmissionAuditMetadata,
+  type SendGroupHistoryDocumentOmission
+} from './delivery';
 import { sendableGroupHistoryMessageCount } from './systemMessages';
 
 const pluginId = 'official.send-group-history';
@@ -50,52 +57,56 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           continue;
         }
 
-        try {
-          const firstFormat = config.formats[0] ?? 'pdf';
-          const remainingFormats = config.formats.slice(1);
-          const firstDocument = await context.exportChatArchive({
-            scopeId: event.scopeId,
-            actorWid: recipient.canonicalWid,
-            chatId: event.chatId,
-            format: firstFormat,
-            ...(since ? { since } : {}),
-            skipAuthorization: true
-          });
-
-          const sendableMessageCount = sendableGroupHistoryMessageCount(firstDocument);
-          if (sendableMessageCount === 0) {
-            const reason = firstDocument.messageCount === 0 ? 'empty-archive' : 'system-only-archive';
-            actions.push(auditSkipped(event, recipient, reason, {
-              messageCount: firstDocument.messageCount,
-              sendableMessageCount,
-              ...(firstDocument.messageTypeCounts ? { messageTypeCounts: firstDocument.messageTypeCounts } : {}),
-              ...(firstDocument.placeholderMessageTypeCounts
-                ? { placeholderMessageTypeCounts: firstDocument.placeholderMessageTypeCounts }
-                : {}),
-              recommendation: 'prepare-history'
-            }));
-            continue;
-          }
-
-          const remainingDocuments = await Promise.all(remainingFormats.map((format) => context.exportChatArchive!({
+        const preparation = await prepareSendGroupHistoryDocuments({
+          formats: config.formats,
+          maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
+          exportFormat: (format) => context.exportChatArchive!({
             scopeId: event.scopeId,
             actorWid: recipient.canonicalWid,
             chatId: event.chatId,
             format,
             ...(since ? { since } : {}),
+            maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
             skipAuthorization: true
-          })));
-          const documents = [firstDocument, ...remainingDocuments];
-          const introText = config.introText.trim();
-          const text = introText.length > 0
-            ? renderIntroText(
-                introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
-                  ? (await context.i18n.translatorForIdentity(recipient.identityId, event.scopeId))('official.send-group-history.introText')
-                  : introText,
-                event
-              )
-            : undefined;
-          actions.push(...documents.map((document, index): PluginAction => ({
+          })
+        });
+        actions.push(...preparation.omissions.map((omission) => auditOmission(event, recipient, omission)));
+
+        if (preparation.everyFormatFailedDuringExport) {
+          await context.ephemeralStore.delete(dedupeKey);
+        }
+        const firstDocument = preparation.documents[0];
+        if (!firstDocument) {
+          continue;
+        }
+
+        const sendableMessageCount = sendableGroupHistoryMessageCount(firstDocument);
+        if (sendableMessageCount === 0) {
+          const reason = firstDocument.messageCount === 0 ? 'empty-archive' : 'system-only-archive';
+          actions.push(auditSkipped(event, recipient, reason, {
+            messageCount: firstDocument.messageCount,
+            sendableMessageCount,
+            ...(firstDocument.messageTypeCounts ? { messageTypeCounts: firstDocument.messageTypeCounts } : {}),
+            ...(firstDocument.placeholderMessageTypeCounts
+              ? { placeholderMessageTypeCounts: firstDocument.placeholderMessageTypeCounts }
+              : {}),
+            recommendation: 'prepare-history'
+          }));
+          continue;
+        }
+
+        const t = await context.i18n.translatorForIdentity(recipient.identityId, event.scopeId);
+        const introText = config.introText.trim();
+        const configuredText = introText.length > 0
+          ? renderIntroText(
+              introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
+                ? t('official.send-group-history.introText')
+                : introText,
+              event
+            )
+          : undefined;
+        const text = appendSendGroupHistoryOmissionNotice(configuredText, preparation.omissions, t);
+        actions.push(...preparation.documents.map((document, index): PluginAction => ({
             type: 'message.sendTextAndDocument',
             chatId: recipient.deliveryChatId,
             requiredRemoteChatId: recipient.deliveryChatId,
@@ -123,22 +134,33 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             failureAudit: {
               action: 'send-group-history.failed',
               targetJson: target(event, recipient),
-              metadataJson: { format: document.format }
+              metadataJson: {
+                phase: 'send',
+                format: document.format,
+                filename: document.filename,
+                sizeBytes: document.buffer.length,
+                maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
+                messageCount: document.messageCount
+              }
             }
           })));
-        } catch (error) {
-          await context.ephemeralStore.delete(dedupeKey);
-          actions.push({
-            type: 'audit.record',
-            action: 'send-group-history.failed',
-            targetJson: target(event, recipient),
-            metadataJson: { reason: errorMessage(error) }
-          });
-        }
       }
 
       return actions;
     }
+  };
+}
+
+function auditOmission(
+  event: PluginParticipantChangeEvent,
+  recipient: PluginParticipantIdentity,
+  omission: SendGroupHistoryDocumentOmission
+): PluginAction {
+  return {
+    type: 'audit.record',
+    action: omission.status === 'too_large' ? 'send-group-history.skipped' : 'send-group-history.failed',
+    targetJson: target(event, recipient),
+    metadataJson: sendGroupHistoryOmissionAuditMetadata(omission)
   };
 }
 
@@ -203,8 +225,4 @@ function target(event: PluginParticipantChangeEvent, recipient: PluginParticipan
       deliveryChatId: recipient.deliveryChatId
     } : {})
   };
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

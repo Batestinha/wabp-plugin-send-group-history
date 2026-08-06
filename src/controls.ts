@@ -45,6 +45,7 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     builderId: 'official.send-group-history.prepare-history.v1',
     builderEndpoints: {
       state: '/api/v1/plugins/official.send-group-history/:scopeId/preparation',
+      preflight: '/api/v1/plugins/official.send-group-history/:scopeId/preflight',
       ensurePolicy: '/api/v1/operator-console/actions/official.send-group-history.ensureArchivePolicy',
       replay: '/api/v1/operator-console/actions/chatArchive.replayNow'
     }
@@ -69,7 +70,7 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
   }, null),
-  control('introText', 'Archive caption', 'Caption sent with the first selected archive document. Leave blank to send only the documents.', 60, { type: 'string' }, {
+  control('introText', 'Archive caption', 'Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed.', 60, { type: 'string' }, {
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1'
   }),
