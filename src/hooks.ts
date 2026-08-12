@@ -14,6 +14,7 @@ import { OUTBOUND_DOCUMENT_MAX_BYTES } from '../../../platform/transport/transpo
 import {
   appendSendGroupHistoryOmissionNotice,
   prepareSendGroupHistoryDocuments,
+  sendGroupHistoryDocumentSetAuditMetadata,
   sendGroupHistoryOmissionAuditMetadata,
   type SendGroupHistoryDocumentOmission
 } from './delivery';
@@ -37,7 +38,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
         return [auditSkipped(event, undefined, 'exempt-group')];
       }
 
-      if (!context.exportChatArchive) {
+      if (!context.exportChatArchive && !context.exportChatArchiveSet) {
         return [auditSkipped(event, undefined, 'missing-runtime-api')];
       }
 
@@ -57,38 +58,46 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           continue;
         }
 
-        const preparation = await prepareSendGroupHistoryDocuments({
-          formats: config.formats,
+        const exportInput = (format: SendGroupHistoryConfig['formats'][number]) => ({
+          scopeId: event.scopeId,
+          actorWid: recipient.canonicalWid,
+          chatId: event.chatId,
+          format,
+          ...(since ? { since } : {}),
           maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
-          exportFormat: (format) => context.exportChatArchive!({
-            scopeId: event.scopeId,
-            actorWid: recipient.canonicalWid,
-            chatId: event.chatId,
-            format,
-            ...(since ? { since } : {}),
-            maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
-            skipAuthorization: true
-          })
+          skipAuthorization: true
         });
+        const preparation = context.exportChatArchiveSet
+          ? await prepareSendGroupHistoryDocuments({
+              formats: config.formats,
+              maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
+              exportFormatSet: (format) => context.exportChatArchiveSet!(exportInput(format))
+            })
+          : await prepareSendGroupHistoryDocuments({
+              formats: config.formats,
+              maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
+              exportFormat: (format) => context.exportChatArchive!(exportInput(format))
+            });
         actions.push(...preparation.omissions.map((omission) => auditOmission(event, recipient, omission)));
 
         if (preparation.everyFormatFailedDuringExport) {
           await context.ephemeralStore.delete(dedupeKey);
         }
-        const firstDocument = preparation.documents[0];
-        if (!firstDocument) {
+        const firstDocumentSet = preparation.documentSets[0];
+        const firstDocument = firstDocumentSet?.documents[0];
+        if (!firstDocumentSet || !firstDocument) {
           continue;
         }
 
-        const sendableMessageCount = sendableGroupHistoryMessageCount(firstDocument);
+        const sendableMessageCount = sendableGroupHistoryMessageCount(firstDocumentSet);
         if (sendableMessageCount === 0) {
-          const reason = firstDocument.messageCount === 0 ? 'empty-archive' : 'system-only-archive';
+          const reason = firstDocumentSet.messageCount === 0 ? 'empty-archive' : 'system-only-archive';
           actions.push(auditSkipped(event, recipient, reason, {
-            messageCount: firstDocument.messageCount,
+            messageCount: firstDocumentSet.messageCount,
             sendableMessageCount,
-            ...(firstDocument.messageTypeCounts ? { messageTypeCounts: firstDocument.messageTypeCounts } : {}),
-            ...(firstDocument.placeholderMessageTypeCounts
-              ? { placeholderMessageTypeCounts: firstDocument.placeholderMessageTypeCounts }
+            ...(firstDocumentSet.messageTypeCounts ? { messageTypeCounts: firstDocumentSet.messageTypeCounts } : {}),
+            ...(firstDocumentSet.placeholderMessageTypeCounts
+              ? { placeholderMessageTypeCounts: firstDocumentSet.placeholderMessageTypeCounts }
               : {}),
             recommendation: 'prepare-history'
           }));
@@ -106,10 +115,20 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
             )
           : undefined;
         const text = appendSendGroupHistoryOmissionNotice(configuredText, preparation.omissions, t);
-        actions.push(...preparation.documents.map((document, index): PluginAction => ({
+        const preparedDocuments = preparation.documentSets.flatMap((documentSet) =>
+          documentSet.documents.map((document, documentIndex) => ({ documentSet, document, documentIndex }))
+        );
+        actions.push(...preparedDocuments.map(({ documentSet, document, documentIndex }, index): PluginAction => ({
             type: 'message.sendTextAndDocument',
             chatId: recipient.deliveryChatId,
             requiredRemoteChatId: recipient.deliveryChatId,
+            idempotencyKey: sendGroupHistoryDeliveryIdempotencyKey(
+              event,
+              recipient,
+              documentSet.format,
+              document.part?.partNumber ?? documentIndex + 1
+            ),
+            ...(documentSet.documents.length > 1 ? { abortBatchOnFailure: true } : {}),
             ...(index === 0 && text ? { text } : {}),
             file: {
               filename: document.filename,
@@ -124,6 +143,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
                 filename: document.filename,
                 sizeBytes: document.buffer.length,
                 messageCount: document.messageCount,
+                ...sendGroupHistoryDocumentSetAuditMetadata(documentSet, document),
                 sendableMessageCount,
                 ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {}),
                 ...(document.placeholderMessageTypeCounts
@@ -140,7 +160,8 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
                 filename: document.filename,
                 sizeBytes: document.buffer.length,
                 maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
-                messageCount: document.messageCount
+                messageCount: document.messageCount,
+                ...sendGroupHistoryDocumentSetAuditMetadata(documentSet, document)
               }
             }
           })));
@@ -195,6 +216,15 @@ function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGro
 
 function deliveryDedupeKey(event: PluginParticipantChangeEvent, recipient: PluginParticipantIdentity): string {
   return `delivery:${event.chatId}:identity:${recipient.identityId}`;
+}
+
+function sendGroupHistoryDeliveryIdempotencyKey(
+  event: PluginParticipantChangeEvent,
+  recipient: PluginParticipantIdentity,
+  format: SendGroupHistoryConfig['formats'][number],
+  partNumber: number
+): string {
+  return `send-group-history:${event.eventId}:identity:${recipient.identityId}:${format}:part:${partNumber}`;
 }
 
 function auditSkipped(

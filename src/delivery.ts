@@ -1,6 +1,8 @@
 import {
   isChatArchiveExportTooLargeError,
   type ChatArchiveExportDocument,
+  type ChatArchiveExportDocumentPart,
+  type ChatArchiveExportDocumentSet,
   type ChatArchiveExportFormat
 } from '../../../platform/chatArchive/chatArchiveExportService';
 import type { TranslateFn } from '../../../platform/i18n';
@@ -17,6 +19,9 @@ export type SendGroupHistoryDocumentOmission =
       maxBytes: number;
       messageCount: number;
       reason: typeof ARCHIVE_DOCUMENT_TOO_LARGE_REASON;
+      archiveSetMessageCount?: number | undefined;
+      documentCount?: number | undefined;
+      part?: ChatArchiveExportDocumentPart | undefined;
     }
   | {
       status: 'failed';
@@ -31,35 +36,61 @@ export type SendGroupHistoryDocumentOmission =
 
 export interface PreparedSendGroupHistoryDocuments {
   documents: ChatArchiveExportDocument[];
+  documentSets: ChatArchiveExportDocumentSet[];
   omissions: SendGroupHistoryDocumentOmission[];
   everyFormatFailedDuringExport: boolean;
 }
 
-export async function prepareSendGroupHistoryDocuments(input: {
+interface PrepareSendGroupHistoryDocumentsBaseInput {
   formats: readonly ChatArchiveExportFormat[];
   maxBytes: number;
-  exportFormat(format: ChatArchiveExportFormat): Promise<ChatArchiveExportDocument>;
-}): Promise<PreparedSendGroupHistoryDocuments> {
+}
+
+type PrepareSendGroupHistoryDocumentsInput = PrepareSendGroupHistoryDocumentsBaseInput & (
+  | {
+      exportFormatSet(format: ChatArchiveExportFormat): Promise<ChatArchiveExportDocumentSet>;
+      exportFormat?: ((format: ChatArchiveExportFormat) => Promise<ChatArchiveExportDocument>) | undefined;
+    }
+  | {
+      exportFormatSet?: undefined;
+      exportFormat(format: ChatArchiveExportFormat): Promise<ChatArchiveExportDocument>;
+    }
+);
+
+export async function prepareSendGroupHistoryDocuments(
+  input: PrepareSendGroupHistoryDocumentsInput
+): Promise<PreparedSendGroupHistoryDocuments> {
   const documents: ChatArchiveExportDocument[] = [];
+  const documentSets: ChatArchiveExportDocumentSet[] = [];
   const omissions: SendGroupHistoryDocumentOmission[] = [];
 
   for (const format of input.formats) {
     try {
-      const document = await input.exportFormat(format);
-      if (document.buffer.length > input.maxBytes) {
+      const documentSet = normalizeSendGroupHistoryDocumentSet(
+        format,
+        input.exportFormatSet
+          ? await input.exportFormatSet(format)
+          : legacyDocumentSet(await input.exportFormat(format))
+      );
+      const oversizedDocument = documentSet.documents.find((document) => document.buffer.length > input.maxBytes);
+      if (oversizedDocument) {
         omissions.push({
           status: 'too_large',
           phase: 'preflight',
-          format: document.format,
-          filename: document.filename,
-          sizeBytes: document.buffer.length,
+          format: documentSet.format,
+          filename: oversizedDocument.filename,
+          sizeBytes: oversizedDocument.buffer.length,
           maxBytes: input.maxBytes,
-          messageCount: document.messageCount,
-          reason: ARCHIVE_DOCUMENT_TOO_LARGE_REASON
+          messageCount: oversizedDocument.messageCount,
+          reason: ARCHIVE_DOCUMENT_TOO_LARGE_REASON,
+          archiveSetMessageCount: documentSet.messageCount,
+          documentCount: documentSet.documents.length,
+          ...(oversizedDocument.part ? { part: oversizedDocument.part } : {})
         });
         continue;
       }
-      documents.push(document);
+      documentSets.push(documentSet);
+      documents.push(...documentSet.documents);
     } catch (error) {
       if (isChatArchiveExportTooLargeError(error)) {
         omissions.push({
@@ -89,6 +120,7 @@ export async function prepareSendGroupHistoryDocuments(input: {
 
   return {
     documents,
+    documentSets,
     omissions,
     everyFormatFailedDuringExport: documents.length === 0
       && omissions.length === input.formats.length
@@ -120,8 +152,225 @@ export function sendGroupHistoryOmissionAuditMetadata(
     filename: omission.filename,
     sizeBytes: omission.sizeBytes,
     maxBytes: omission.maxBytes,
-    messageCount: omission.messageCount
+    messageCount: omission.messageCount,
+    ...('archiveSetMessageCount' in omission && omission.archiveSetMessageCount !== undefined
+      ? { archiveSetMessageCount: omission.archiveSetMessageCount }
+      : {}),
+    ...('documentCount' in omission && omission.documentCount !== undefined
+      ? { documentCount: omission.documentCount }
+      : {}),
+    ...('part' in omission && omission.part
+      ? sendGroupHistoryDocumentPartAuditMetadata(omission.part)
+      : {})
   };
+}
+
+export function sendGroupHistoryDocumentSetAuditMetadata(
+  documentSet: ChatArchiveExportDocumentSet,
+  document: ChatArchiveExportDocument
+): Record<string, unknown> {
+  return {
+    archiveSetMessageCount: documentSet.messageCount,
+    documentCount: documentSet.documents.length,
+    ...(document.part ? sendGroupHistoryDocumentPartAuditMetadata(document.part) : {})
+  };
+}
+
+function sendGroupHistoryDocumentPartAuditMetadata(part: ChatArchiveExportDocumentPart): Record<string, unknown> {
+  return {
+    partNumber: part.partNumber,
+    partCount: part.partCount,
+    partFirstMessageAt: part.firstMessageAt?.toISOString() ?? null,
+    partLastMessageAt: part.lastMessageAt?.toISOString() ?? null
+  };
+}
+
+function legacyDocumentSet(document: ChatArchiveExportDocument): ChatArchiveExportDocumentSet {
+  return {
+    format: document.format,
+    documents: [document],
+    messageCount: document.messageCount,
+    ...(document.messageTypeCounts ? { messageTypeCounts: document.messageTypeCounts } : {}),
+    ...(document.placeholderMessageTypeCounts
+      ? { placeholderMessageTypeCounts: document.placeholderMessageTypeCounts }
+      : {}),
+    chatTitle: document.chatTitle,
+    ...(document.coverage ? { coverage: document.coverage } : {})
+  };
+}
+
+export function normalizeSendGroupHistoryDocumentSet(
+  requestedFormat: ChatArchiveExportFormat,
+  documentSet: ChatArchiveExportDocumentSet
+): ChatArchiveExportDocumentSet {
+  if (documentSet.format !== requestedFormat) {
+    throw new Error(`Archive exporter returned ${documentSet.format} for requested ${requestedFormat} format.`);
+  }
+  if (documentSet.documents.length === 0) {
+    throw new Error(`Archive exporter returned no ${requestedFormat} documents.`);
+  }
+  if (documentSet.documents.some((document) => document.format !== requestedFormat)) {
+    throw new Error(`Archive exporter returned a mixed-format ${requestedFormat} document set.`);
+  }
+
+  const documents = [...documentSet.documents];
+  assertNonNegativeSafeInteger(documentSet.messageCount, `${requestedFormat} archive-set message count`);
+  for (const document of documents) {
+    assertNonNegativeSafeInteger(document.messageCount, `${requestedFormat} document message count`);
+    if (document.chatTitle !== documentSet.chatTitle) {
+      throw new Error(`Archive exporter returned mismatched ${requestedFormat} chat titles.`);
+    }
+    validateCountMap(document.messageTypeCounts, `${requestedFormat} document message-type counts`);
+    validateCountMap(
+      document.placeholderMessageTypeCounts,
+      `${requestedFormat} document placeholder-message-type counts`
+    );
+  }
+  const summedMessageCount = documents.reduce((sum, document) => sum + document.messageCount, 0);
+  if (!Number.isSafeInteger(summedMessageCount) || summedMessageCount !== documentSet.messageCount) {
+    throw new Error(`Archive exporter returned an inconsistent ${requestedFormat} archive-set message count.`);
+  }
+
+  const parts = documents.map((document) => document.part);
+  if (documents.length === 1 && parts[0] === undefined) {
+    return normalizedAggregateCounts(requestedFormat, documentSet, documents);
+  }
+  if (parts.some((part) => part === undefined)) {
+    throw new Error(`Archive exporter returned incomplete ${requestedFormat} document part metadata.`);
+  }
+  const completeParts = parts as ChatArchiveExportDocumentPart[];
+  for (const part of completeParts) {
+    assertPositiveSafeInteger(part.partNumber, `${requestedFormat} document part number`);
+    assertPositiveSafeInteger(part.partCount, `${requestedFormat} document part count`);
+    validatePartRange(requestedFormat, part);
+  }
+  if (completeParts.some((part) => part.partCount !== documents.length)) {
+    throw new Error(`Archive exporter returned inconsistent ${requestedFormat} document part counts.`);
+  }
+  const partNumbers = new Set(completeParts.map((part) => part.partNumber));
+  if (
+    partNumbers.size !== documents.length
+    || completeParts.some((part) => part.partNumber > documents.length)
+  ) {
+    throw new Error(`Archive exporter returned invalid ${requestedFormat} document part numbers.`);
+  }
+  documents.sort((left, right) => left.part!.partNumber - right.part!.partNumber);
+  for (let index = 1; index < documents.length; index += 1) {
+    const previous = documents[index - 1]!.part!;
+    const current = documents[index]!.part!;
+    if (!previous.lastMessageAt || !current.firstMessageAt) {
+      throw new Error(`Archive exporter returned an undated multipart ${requestedFormat} document set.`);
+    }
+    if (previous.lastMessageAt.getTime() > current.firstMessageAt.getTime()) {
+      throw new Error(`Archive exporter returned non-chronological ${requestedFormat} document parts.`);
+    }
+  }
+  return normalizedAggregateCounts(requestedFormat, documentSet, documents);
+}
+
+function normalizedAggregateCounts(
+  format: ChatArchiveExportFormat,
+  documentSet: ChatArchiveExportDocumentSet,
+  documents: ChatArchiveExportDocument[]
+): ChatArchiveExportDocumentSet {
+  const normalized = { ...documentSet, documents };
+  normalized.messageTypeCounts = normalizedAggregateCountMap(
+    format,
+    'message-type',
+    documentSet.messageTypeCounts,
+    documents.map((document) => document.messageTypeCounts)
+  );
+  normalized.placeholderMessageTypeCounts = normalizedAggregateCountMap(
+    format,
+    'placeholder-message-type',
+    documentSet.placeholderMessageTypeCounts,
+    documents.map((document) => document.placeholderMessageTypeCounts)
+  );
+  return normalized;
+}
+
+function normalizedAggregateCountMap(
+  format: ChatArchiveExportFormat,
+  label: string,
+  aggregate: Record<string, number> | undefined,
+  documentMaps: Array<Record<string, number> | undefined>
+): Record<string, number> | undefined {
+  validateCountMap(aggregate, `${format} archive-set ${label} counts`);
+  if (documentMaps.some((counts) => counts === undefined)) {
+    return aggregate ? normalizedCountMap(aggregate) : undefined;
+  }
+  const recomputed = new Map<string, number>();
+  for (const counts of documentMaps as Array<Record<string, number>>) {
+    for (const [key, count] of Object.entries(normalizedCountMap(counts))) {
+      const next = (recomputed.get(key) ?? 0) + count;
+      if (!Number.isSafeInteger(next)) {
+        throw new Error(`Archive exporter returned overflowing ${format} ${label} counts.`);
+      }
+      recomputed.set(key, next);
+    }
+  }
+  const recomputedCounts = Object.fromEntries(recomputed);
+  if (aggregate && !countMapsEqual(normalizedCountMap(aggregate), recomputedCounts)) {
+    throw new Error(`Archive exporter returned inconsistent ${format} archive-set ${label} counts.`);
+  }
+  return recomputedCounts;
+}
+
+function validatePartRange(format: ChatArchiveExportFormat, part: ChatArchiveExportDocumentPart): void {
+  const first = validDateOrNull(part.firstMessageAt);
+  const last = validDateOrNull(part.lastMessageAt);
+  if (!first || !last) {
+    throw new Error(`Archive exporter returned invalid ${format} document part dates.`);
+  }
+  if ((part.firstMessageAt === null) !== (part.lastMessageAt === null)) {
+    throw new Error(`Archive exporter returned an incomplete ${format} document part range.`);
+  }
+  if (
+    part.firstMessageAt
+    && part.lastMessageAt
+    && part.firstMessageAt.getTime() > part.lastMessageAt.getTime()
+  ) {
+    throw new Error(`Archive exporter returned a reversed ${format} document part range.`);
+  }
+}
+
+function validDateOrNull(value: unknown): boolean {
+  return value === null || (value instanceof Date && Number.isFinite(value.getTime()));
+}
+
+function validateCountMap(value: Record<string, number> | undefined, label: string): void {
+  if (value === undefined) {
+    return;
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`Archive exporter returned invalid ${label}.`);
+  }
+  for (const count of Object.values(value)) {
+    assertNonNegativeSafeInteger(count, label);
+  }
+}
+
+function normalizedCountMap(value: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(value).filter(([, count]) => count !== 0));
+}
+
+function countMapsEqual(left: Record<string, number>, right: Record<string, number>): boolean {
+  const leftEntries = Object.entries(left).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey));
+  const rightEntries = Object.entries(right).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey));
+  return leftEntries.length === rightEntries.length
+    && leftEntries.every(([key, count], index) => key === rightEntries[index]?.[0] && count === rightEntries[index]?.[1]);
+}
+
+function assertNonNegativeSafeInteger(value: number, label: string): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`Archive exporter returned an invalid ${label}.`);
+  }
+}
+
+function assertPositiveSafeInteger(value: number, label: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(`Archive exporter returned an invalid ${label}.`);
+  }
 }
 
 function errorMessage(error: unknown): string {
