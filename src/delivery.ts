@@ -255,15 +255,27 @@ export function normalizeSendGroupHistoryDocumentSet(
     throw new Error(`Archive exporter returned invalid ${requestedFormat} document part numbers.`);
   }
   documents.sort((left, right) => left.part!.partNumber - right.part!.partNumber);
+  let rangesAreAscending = true;
+  let rangesAreDescending = requestedFormat === 'html';
   for (let index = 1; index < documents.length; index += 1) {
     const previous = documents[index - 1]!.part!;
     const current = documents[index]!.part!;
-    if (!previous.lastMessageAt || !current.firstMessageAt) {
+    if (
+      !previous.firstMessageAt
+      || !previous.lastMessageAt
+      || !current.firstMessageAt
+      || !current.lastMessageAt
+    ) {
       throw new Error(`Archive exporter returned an undated multipart ${requestedFormat} document set.`);
     }
-    if (previous.lastMessageAt.getTime() > current.firstMessageAt.getTime()) {
-      throw new Error(`Archive exporter returned non-chronological ${requestedFormat} document parts.`);
-    }
+    rangesAreAscending &&= previous.lastMessageAt.getTime() <= current.firstMessageAt.getTime();
+    rangesAreDescending &&= previous.firstMessageAt.getTime() >= current.lastMessageAt.getTime();
+  }
+  // Rich HTML parts follow the document's default newest-first reading order.
+  // Retain ascending-only validation for other formats and legacy exporters,
+  // while accepting either coherent direction for compatible HTML sets.
+  if (!rangesAreAscending && !rangesAreDescending) {
+    throw new Error(`Archive exporter returned non-chronological ${requestedFormat} document parts.`);
   }
   return normalizedAggregateCounts(requestedFormat, documentSet, documents);
 }
