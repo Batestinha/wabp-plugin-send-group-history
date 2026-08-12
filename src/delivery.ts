@@ -169,9 +169,21 @@ export function sendGroupHistoryDocumentSetAuditMetadata(
   documentSet: ChatArchiveExportDocumentSet,
   document: ChatArchiveExportDocument
 ): Record<string, unknown> {
+  const coverage = documentSet.coverage ?? document.coverage;
   return {
     archiveSetMessageCount: documentSet.messageCount,
     documentCount: documentSet.documents.length,
+    ...(coverage ? {
+      archiveCompleteness: coverage.completeness,
+      archiveTotalMessageCount: coverage.totalMessageCount,
+      archiveIncludedMessageCount: coverage.includedMessageCount,
+      archiveOmittedMessageCount: coverage.omittedMessageCount,
+      archiveIncludedFirstMessageAt: coverage.includedRange?.firstMessageAt.toISOString() ?? null,
+      archiveIncludedLastMessageAt: coverage.includedRange?.lastMessageAt.toISOString() ?? null,
+      archiveOmittedFirstMessageAt: coverage.omittedRange?.firstMessageAt.toISOString() ?? null,
+      archiveOmittedLastMessageAt: coverage.omittedRange?.lastMessageAt.toISOString() ?? null,
+      archiveOverflowStrategy: coverage.overflowStrategy
+    } : {}),
     ...(document.part ? sendGroupHistoryDocumentPartAuditMetadata(document.part) : {})
   };
 }

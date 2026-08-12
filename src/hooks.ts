@@ -65,6 +65,7 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
           format,
           ...(since ? { since } : {}),
           maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
+          overflowStrategy: 'truncate_oldest' as const,
           skipAuthorization: true
         });
         const preparation = context.exportChatArchiveSet
