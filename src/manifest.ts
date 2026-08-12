@@ -5,7 +5,7 @@ import { sendGroupHistoryMessages } from './messages';
 export const sendGroupHistoryManifest: PluginManifest = {
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
-  version: '0.4.0',
+  version: '0.4.1',
   coreApiRange: '>=0.2.0',
   messageNamespace: 'official.send-group-history',
   descriptionKey: 'official.send-group-history.description',
@@ -34,7 +34,7 @@ export const sendGroupHistoryManifest: PluginManifest = {
   backgroundJobs: [],
   cancellation: { workflows: [] },
   assistant: {
-    summary: 'Automatically attempts configured chat archive formats independently and sends each eligible, up-to-100-MiB document to new members after they join or are approved.',
+    summary: 'Automatically attempts configured chat archive formats independently and sends at most one eligible, up-to-100-MiB document per format to new members after they join or are approved.',
     useCases: [
       'Explain whether new members will receive archived group history.',
       'Describe which participant arrival events trigger archive delivery.',

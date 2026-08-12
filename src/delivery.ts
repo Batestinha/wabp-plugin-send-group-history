@@ -209,6 +209,11 @@ export function normalizeSendGroupHistoryDocumentSet(
   if (documentSet.documents.length === 0) {
     throw new Error(`Archive exporter returned no ${requestedFormat} documents.`);
   }
+  if (documentSet.documents.length > 1) {
+    throw new Error(
+      `Archive exporter returned multiple ${requestedFormat} documents; Send History allows one document per format.`
+    );
+  }
   if (documentSet.documents.some((document) => document.format !== requestedFormat)) {
     throw new Error(`Archive exporter returned a mixed-format ${requestedFormat} document set.`);
   }
@@ -231,51 +236,14 @@ export function normalizeSendGroupHistoryDocumentSet(
     throw new Error(`Archive exporter returned an inconsistent ${requestedFormat} archive-set message count.`);
   }
 
-  const parts = documents.map((document) => document.part);
-  if (documents.length === 1 && parts[0] === undefined) {
-    return normalizedAggregateCounts(requestedFormat, documentSet, documents);
-  }
-  if (parts.some((part) => part === undefined)) {
-    throw new Error(`Archive exporter returned incomplete ${requestedFormat} document part metadata.`);
-  }
-  const completeParts = parts as ChatArchiveExportDocumentPart[];
-  for (const part of completeParts) {
+  const part = documents[0]?.part;
+  if (part !== undefined) {
     assertPositiveSafeInteger(part.partNumber, `${requestedFormat} document part number`);
     assertPositiveSafeInteger(part.partCount, `${requestedFormat} document part count`);
     validatePartRange(requestedFormat, part);
-  }
-  if (completeParts.some((part) => part.partCount !== documents.length)) {
-    throw new Error(`Archive exporter returned inconsistent ${requestedFormat} document part counts.`);
-  }
-  const partNumbers = new Set(completeParts.map((part) => part.partNumber));
-  if (
-    partNumbers.size !== documents.length
-    || completeParts.some((part) => part.partNumber > documents.length)
-  ) {
-    throw new Error(`Archive exporter returned invalid ${requestedFormat} document part numbers.`);
-  }
-  documents.sort((left, right) => left.part!.partNumber - right.part!.partNumber);
-  let rangesAreAscending = true;
-  let rangesAreDescending = requestedFormat === 'html';
-  for (let index = 1; index < documents.length; index += 1) {
-    const previous = documents[index - 1]!.part!;
-    const current = documents[index]!.part!;
-    if (
-      !previous.firstMessageAt
-      || !previous.lastMessageAt
-      || !current.firstMessageAt
-      || !current.lastMessageAt
-    ) {
-      throw new Error(`Archive exporter returned an undated multipart ${requestedFormat} document set.`);
+    if (part.partNumber !== 1 || part.partCount !== 1) {
+      throw new Error(`Archive exporter returned multipart metadata for single-file ${requestedFormat} history.`);
     }
-    rangesAreAscending &&= previous.lastMessageAt.getTime() <= current.firstMessageAt.getTime();
-    rangesAreDescending &&= previous.firstMessageAt.getTime() >= current.lastMessageAt.getTime();
-  }
-  // Rich HTML parts follow the document's default newest-first reading order.
-  // Retain ascending-only validation for other formats and legacy exporters,
-  // while accepting either coherent direction for compatible HTML sets.
-  if (!rangesAreAscending && !rangesAreDescending) {
-    throw new Error(`Archive exporter returned non-chronological ${requestedFormat} document parts.`);
   }
   return normalizedAggregateCounts(requestedFormat, documentSet, documents);
 }

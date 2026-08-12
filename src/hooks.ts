@@ -128,7 +128,6 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
               documentSet.format,
               document.part?.partNumber ?? documentIndex + 1
             ),
-            ...(documentSet.documents.length > 1 ? { abortBatchOnFailure: true } : {}),
             ...(index === 0 && text ? { text } : {}),
             file: {
               filename: document.filename,
