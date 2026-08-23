@@ -19,6 +19,7 @@ import {
   type SendGroupHistoryDocumentOmission
 } from './delivery';
 import { sendableGroupHistoryMessageCount } from './systemMessages';
+import { renderSendGroupHistoryIntroText } from './introText';
 
 const pluginId = 'official.send-group-history';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -107,14 +108,30 @@ export function createSendGroupHistoryHooks(context: PluginRuntimeContext): Plug
 
         const t = await context.i18n.translatorForIdentity(recipient.identityId, event.scopeId);
         const introText = config.introText.trim();
-        const configuredText = introText.length > 0
-          ? renderIntroText(
-              introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
-                ? t('official.send-group-history.introText')
-                : introText,
-              event
-            )
-          : undefined;
+        let renderedIntroText: string | undefined;
+        try {
+          renderedIntroText = introText.length > 0
+            ? renderIntroText(
+                introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
+                  ? t('official.send-group-history.introText')
+                  : introText,
+                event
+              )
+            : undefined;
+        } catch {
+          context.logger.warn({
+            pluginId,
+            scopeId: event.scopeId,
+            field: 'introText'
+          }, 'Send-group-history caption template is invalid; sending documents without it');
+          actions.push({
+            type: 'audit.record',
+            action: 'send-group-history.caption_skipped',
+            targetJson: target(event, recipient),
+            metadataJson: { reason: 'template-invalid' }
+          });
+        }
+        const configuredText = renderedIntroText?.trim() || undefined;
         const text = appendSendGroupHistoryOmissionNotice(configuredText, preparation.omissions, t);
         const preparedDocuments = preparation.documentSets.flatMap((documentSet) =>
           documentSet.documents.map((document, documentIndex) => ({ documentSet, document, documentIndex }))
@@ -197,8 +214,11 @@ function historySince(event: PluginParticipantChangeEvent, config: SendGroupHist
 }
 
 function renderIntroText(text: string, event: PluginParticipantChangeEvent): string {
-  const groupDisplayName = event.groupDisplayName?.trim() || event.chatId;
-  return text.replace(/\{groupDisplayName\}/g, groupDisplayName);
+  return renderSendGroupHistoryIntroText({
+    source: text,
+    groupDisplayName: event.groupDisplayName,
+    chatId: event.chatId
+  });
 }
 
 function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGroupHistoryConfig): boolean {

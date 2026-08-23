@@ -72,7 +72,16 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
   }, null),
   control('introText', 'Archive caption', 'Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed.', 60, { type: 'string' }, {
     widget: 'builder',
-    builderId: 'official.send-group-history.prepare-history.v1'
+    builderId: 'official.send-group-history.prepare-history.v1',
+    templateDialect: 'conditional-presence-v1',
+    templateActivation: 'when-condition-used',
+    templateVariables: [
+      { token: 'groupDisplayName', label: 'Group display name', sampleValue: 'Walking Club' }
+    ],
+    templateConditionVariables: [
+      { token: 'hasGroupDisplayName', label: 'Readable group name', sampleValue: 'true' }
+    ],
+    templateEmptyResult: 'suppress'
   }),
   control(
     'dedupeTtlSeconds',
