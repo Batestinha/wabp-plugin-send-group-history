@@ -1,5 +1,5 @@
-import type { HookPlugin } from '../../../../packages/plugin-sdk/src/hook-plugin';
-import type { ArchiveHookPluginContext } from '../../../../packages/plugin-sdk/src/archive-hook-plugin';
+import type { HookPlugin } from '@wabs/plugin-sdk/hook-plugin';
+import type { ArchiveHookPluginContext } from '@wabs/plugin-sdk/archive-hook-plugin';
 import { createSendGroupHistoryHooks } from './hooks';
 import { sendGroupHistoryManifest } from './manifest';
 

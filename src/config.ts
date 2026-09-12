@@ -2,7 +2,7 @@ import { z } from 'zod';
 import {
   conditionalTemplateHasCondition,
   validateConditionalTemplate
-} from '../../../../packages/plugin-sdk/src/templates';
+} from '@wabs/plugin-sdk/templates';
 import { SEND_GROUP_HISTORY_INTRO_TEXT_TOKENS } from './introText';
 
 export const DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT = 'Here is the archived history for this group.';

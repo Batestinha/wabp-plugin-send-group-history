@@ -1,16 +1,16 @@
-import type { PluginAction } from '../../../../packages/plugin-sdk/src/actions';
-import type { ArchiveHookPluginContext } from '../../../../packages/plugin-sdk/src/archive-hook-plugin';
+import type { PluginAction } from '@wabs/plugin-sdk/actions';
+import type { ArchiveHookPluginContext } from '@wabs/plugin-sdk/archive-hook-plugin';
 import type {
   PluginParticipantChangeEvent,
   PluginParticipantIdentity,
   PluginRuntimeHooks
-} from '../../../../packages/plugin-sdk/src/hooks';
+} from '@wabs/plugin-sdk/hooks';
 import {
   DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT,
   parseSendGroupHistoryConfig,
   type SendGroupHistoryConfig
 } from './config';
-import { OUTBOUND_DOCUMENT_MAX_BYTES } from '../../../../packages/plugin-sdk/src/transport-limits';
+import { OUTBOUND_DOCUMENT_MAX_BYTES } from '@wabs/plugin-sdk/transport-limits';
 import {
   appendSendGroupHistoryOmissionNotice,
   prepareSendGroupHistoryDocuments,

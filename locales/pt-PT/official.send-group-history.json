@@ -1,0 +1,10 @@
+{
+  "official.send-group-history.description": "Envia o histórico arquivado existente do grupo a novos membros como documentos de arquivo privados.",
+  "official.send-group-history.help.feature.title": "Histórico de boas-vindas",
+  "official.send-group-history.help.feature.summary": "Envia em privado o histórico retido do grupo a novos membros elegíveis.",
+  "official.send-group-history.help.delivery.title": "Entregar histórico do grupo",
+  "official.send-group-history.help.delivery.summary": "Exporta automaticamente mensagens retidas depois de um membro entrar, ser adicionado ou aprovado.",
+  "official.send-group-history.help.delivery.instruction": "Esta funcionalidade tenta os formatos configurados de forma independente e pela ordem definida. Se um ficheiro exceder o limite fixo de entrega de 100 MiB, as mensagens mais antigas são omitidas até o histórico mais recente caber. Um formato só é omitido se nem o conteúdo mais recente couber ou se a preparação falhar.",
+  "official.send-group-history.introText": "Aqui esta o historico arquivado deste grupo.",
+  "official.send-group-history.omittedFormatsNotice": "Alguns formatos de arquivo pedidos foram omitidos porque não puderam ser preparados ou excederam o limite de entrega: {formats}."
+}

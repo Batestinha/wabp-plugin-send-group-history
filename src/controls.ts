@@ -1,5 +1,5 @@
-import { defineControl } from '../../../../packages/plugin-sdk/src/controls';
-import type { ControlDescriptor, ControlSchemaMetadata, ControlUiHint } from '../../../../packages/plugin-sdk/src/controls-types';
+import { defineControl } from '@wabs/plugin-sdk/controls';
+import type { ControlDescriptor, ControlSchemaMetadata, ControlUiHint } from '@wabs/plugin-sdk/controls-types';
 import { SEND_GROUP_HISTORY_EXPORT_FORMATS } from './config';
 
 const formatOptions = SEND_GROUP_HISTORY_EXPORT_FORMATS.map((format) => ({
