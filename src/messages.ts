@@ -1,4 +1,4 @@
-import type { MessageCatalog } from '../../../platform/i18n';
+import type { MessageCatalog } from '../../../../packages/plugin-sdk/src/i18n';
 
 export const sendGroupHistoryMessages: MessageCatalog = {
   'official.send-group-history.description': 'Send existing archived group history to new members as private archive documents.',

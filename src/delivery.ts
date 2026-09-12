@@ -4,8 +4,8 @@ import {
   type ChatArchiveExportDocumentPart,
   type ChatArchiveExportDocumentSet,
   type ChatArchiveExportFormat
-} from '../../../platform/chatArchive/chatArchiveExportService';
-import type { TranslateFn } from '../../../platform/i18n';
+} from '../../../../packages/plugin-sdk/src/chat-archive';
+import type { TranslateFn } from '../../../../packages/plugin-sdk/src/i18n';
 
 export const ARCHIVE_DOCUMENT_TOO_LARGE_REASON = 'archive-document-too-large';
 

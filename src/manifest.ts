@@ -1,12 +1,12 @@
-import type { PluginManifest } from '../../../platform/pluginRuntime/manifest';
+import type { PluginManifest } from '../../../../packages/plugin-sdk/src/manifest';
 import { sendGroupHistoryConfigSchema } from './config';
 import { sendGroupHistoryMessages } from './messages';
 
 export const sendGroupHistoryManifest: PluginManifest = {
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
-  version: '0.4.2',
-  coreApiRange: '>=0.2.0',
+  version: '0.4.3',
+  coreApiRange: '^0.3.0',
   messageNamespace: 'official.send-group-history',
   descriptionKey: 'official.send-group-history.description',
   defaultMessages: sendGroupHistoryMessages,

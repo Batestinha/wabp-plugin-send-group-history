@@ -1,16 +1,16 @@
-import type { PluginAction } from '../../../platform/pluginRuntime/runtime/pluginActionTypes';
-import type { PluginRuntimeContext } from '../../../platform/pluginRuntime/runtime/pluginRuntimeContext';
+import type { PluginAction } from '../../../../packages/plugin-sdk/src/actions';
+import type { ArchiveHookPluginContext } from '../../../../packages/plugin-sdk/src/archive-hook-plugin';
 import type {
   PluginParticipantChangeEvent,
   PluginParticipantIdentity,
   PluginRuntimeHooks
-} from '../../../platform/pluginRuntime/types';
+} from '../../../../packages/plugin-sdk/src/hooks';
 import {
   DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT,
   parseSendGroupHistoryConfig,
   type SendGroupHistoryConfig
 } from './config';
-import { OUTBOUND_DOCUMENT_MAX_BYTES } from '../../../platform/transport/transportFileLoader';
+import { OUTBOUND_DOCUMENT_MAX_BYTES } from '../../../../packages/plugin-sdk/src/transport-limits';
 import {
   appendSendGroupHistoryOmissionNotice,
   prepareSendGroupHistoryDocuments,
@@ -24,7 +24,7 @@ import { renderSendGroupHistoryIntroText } from './introText';
 const pluginId = 'official.send-group-history';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function createSendGroupHistoryHooks(context: PluginRuntimeContext): PluginRuntimeHooks {
+export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): PluginRuntimeHooks {
   return {
     async onParticipantChange(event) {
       const config = parseSendGroupHistoryConfig(await context.configFor(

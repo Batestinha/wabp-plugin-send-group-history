@@ -1,7 +1,7 @@
 import {
   conditionalTemplateHasCondition,
   renderConditionalTemplateIfActive
-} from '../../../platform/templates/conditionalTemplate';
+} from '../../../../packages/plugin-sdk/src/templates';
 
 export const SEND_GROUP_HISTORY_INTRO_TEXT_TOKENS = [
   'groupDisplayName',
