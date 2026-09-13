@@ -4,8 +4,8 @@
   "name": "Send Group History",
   "description": "Send existing archived group history to new members as private archive documents.",
   "kind": "managed_group",
-  "version": "0.4.3",
-  "coreApiRange": "^0.3.0",
+  "version": "0.4.4",
+  "coreApiRange": "^0.3.5",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
   "descriptionKey": "official.send-group-history.description",
@@ -86,8 +86,9 @@
     ],
     "controls": [
       {
-        "id": "plugin.official.send-group-history.enabled",
+        "pluginId": "official.send-group-history",
         "path": "enabled",
+        "id": "plugin.official.send-group-history.enabled",
         "label": "Enabled",
         "description": "Send existing archived group history to new members.",
         "section": "Send Group History",
@@ -96,6 +97,7 @@
           "type": "boolean"
         },
         "ui": {
+          "helpText": "Send existing archived group history to new members.",
           "widget": "builder",
           "builderId": "official.send-group-history.prepare-history.v1",
           "builderEndpoints": {
@@ -103,13 +105,20 @@
             "preflight": "/api/v1/plugins/official.send-group-history/:scopeId/preflight",
             "ensurePolicy": "/api/v1/operator-console/actions/official.send-group-history.ensureArchivePolicy",
             "replay": "/api/v1/operator-console/actions/chatArchive.replayNow"
-          },
-          "helpText": "Send existing archived group history to new members."
-        }
+          }
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.sendOnJoin",
+        "pluginId": "official.send-group-history",
         "path": "sendOnJoin",
+        "id": "plugin.official.send-group-history.sendOnJoin",
         "label": "Direct joins",
         "description": "Send history when WhatsApp reports a direct join.",
         "section": "Send Group History",
@@ -118,13 +127,21 @@
           "type": "boolean"
         },
         "ui": {
-          "widget": "toggle",
-          "helpText": "Send history when WhatsApp reports a direct join."
-        }
+          "helpText": "Send history when WhatsApp reports a direct join.",
+          "widget": "toggle"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.sendOnAdd",
+        "pluginId": "official.send-group-history",
         "path": "sendOnAdd",
+        "id": "plugin.official.send-group-history.sendOnAdd",
         "label": "Admin-added members",
         "description": "Send history when a member is added by an admin.",
         "section": "Send Group History",
@@ -133,13 +150,21 @@
           "type": "boolean"
         },
         "ui": {
-          "widget": "toggle",
-          "helpText": "Send history when a member is added by an admin."
-        }
+          "helpText": "Send history when a member is added by an admin.",
+          "widget": "toggle"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.sendOnApproval",
+        "pluginId": "official.send-group-history",
         "path": "sendOnApproval",
+        "id": "plugin.official.send-group-history.sendOnApproval",
         "label": "Approved requests",
         "description": "Send history after an admin approves a membership request.",
         "section": "Send Group History",
@@ -148,13 +173,21 @@
           "type": "boolean"
         },
         "ui": {
-          "widget": "toggle",
-          "helpText": "Send history after an admin approves a membership request."
-        }
+          "helpText": "Send history after an admin approves a membership request.",
+          "widget": "toggle"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.ensureArchivePolicy",
+        "pluginId": "official.send-group-history",
         "path": "ensureArchivePolicy",
+        "id": "plugin.official.send-group-history.ensureArchivePolicy",
         "label": "Ensure archive policy",
         "description": "When preparing or enabling this plugin, include this scope in future chat archive capture when needed.",
         "section": "Send Group History",
@@ -163,13 +196,21 @@
           "type": "boolean"
         },
         "ui": {
-          "widget": "toggle",
-          "helpText": "When preparing or enabling this plugin, include this scope in future chat archive capture when needed."
-        }
+          "helpText": "When preparing or enabling this plugin, include this scope in future chat archive capture when needed.",
+          "widget": "toggle"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.formats",
+        "pluginId": "official.send-group-history",
         "path": "formats",
+        "id": "plugin.official.send-group-history.formats",
         "label": "Archive formats",
         "description": "One or more archive document formats to send to each new member.",
         "section": "Send Group History",
@@ -200,14 +241,22 @@
           }
         },
         "ui": {
+          "helpText": "One or more archive document formats to send to each new member.",
           "widget": "builder",
-          "builderId": "official.send-group-history.prepare-history.v1",
-          "helpText": "One or more archive document formats to send to each new member."
-        }
+          "builderId": "official.send-group-history.prepare-history.v1"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.exemptGroupChatIds",
+        "pluginId": "official.send-group-history",
         "path": "exemptGroupChatIds",
+        "id": "plugin.official.send-group-history.exemptGroupChatIds",
         "label": "Exempt groups",
         "description": "Managed groups in this affected scope that should not receive automatic history delivery.",
         "section": "Send Group History",
@@ -219,14 +268,22 @@
           }
         },
         "ui": {
+          "helpText": "Managed groups in this affected scope that should not receive automatic history delivery.",
           "widget": "builder",
-          "builderId": "official.send-group-history.prepare-history.v1",
-          "helpText": "Managed groups in this affected scope that should not receive automatic history delivery."
-        }
+          "builderId": "official.send-group-history.prepare-history.v1"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.historyDays",
+        "pluginId": "official.send-group-history",
         "path": "historyDays",
+        "id": "plugin.official.send-group-history.historyDays",
         "label": "History days",
         "description": "Number of days of archived history to send. Blank sends all available history.",
         "section": "Send Group History",
@@ -238,14 +295,22 @@
           "max": 3650
         },
         "ui": {
+          "helpText": "Number of days of archived history to send. Blank sends all available history.",
           "widget": "builder",
-          "builderId": "official.send-group-history.prepare-history.v1",
-          "helpText": "Number of days of archived history to send. Blank sends all available history."
-        }
+          "builderId": "official.send-group-history.prepare-history.v1"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.introText",
+        "pluginId": "official.send-group-history",
         "path": "introText",
+        "id": "plugin.official.send-group-history.introText",
         "label": "Archive caption",
         "description": "Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed.",
         "section": "Send Group History",
@@ -254,6 +319,7 @@
           "type": "string"
         },
         "ui": {
+          "helpText": "Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed.",
           "widget": "builder",
           "builderId": "official.send-group-history.prepare-history.v1",
           "templateDialect": "conditional-presence-v1",
@@ -272,13 +338,20 @@
               "sampleValue": "true"
             }
           ],
-          "templateEmptyResult": "suppress",
-          "helpText": "Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed."
-        }
+          "templateEmptyResult": "suppress"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       },
       {
-        "id": "plugin.official.send-group-history.dedupeTtlSeconds",
+        "pluginId": "official.send-group-history",
         "path": "dedupeTtlSeconds",
+        "id": "plugin.official.send-group-history.dedupeTtlSeconds",
         "label": "Dedupe TTL",
         "description": "Seconds to suppress duplicate delivery for the same scope, group, and user.",
         "section": "Send Group History",
@@ -290,11 +363,56 @@
           "max": 2592000
         },
         "ui": {
-          "widget": "duration",
-          "helpText": "Seconds to suppress duplicate delivery for the same scope, group, and user."
-        }
+          "helpText": "Seconds to suppress duplicate delivery for the same scope, group, and user.",
+          "widget": "duration"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
       }
     ],
     "internalConfigPaths": []
-  }
+  },
+  "externalActions": [
+    {
+      "actionId": "official.send-group-history.manualSend",
+      "access": "mutation",
+      "scope": "account",
+      "timeoutMs": 120000
+    }
+  ],
+  "configuration": {
+    "scopeEnabledOperationId": "official.send-group-history.scopeEnabled",
+    "permissionDeclarations": []
+  },
+  "consoleOperations": [
+    {
+      "operationId": "official.send-group-history.sendGroupHistoryPreparationState",
+      "access": "read",
+      "authorization": "operator",
+      "description": "Inspect archive delivery readiness"
+    },
+    {
+      "operationId": "official.send-group-history.sendGroupHistoryExportPreflight",
+      "access": "read",
+      "authorization": "operator",
+      "description": "Check archive document sizes and coverage"
+    },
+    {
+      "operationId": "official.send-group-history.ensureSendGroupHistoryPolicy",
+      "access": "mutation",
+      "authorization": "operator",
+      "description": "Enable archive capture for this scope"
+    },
+    {
+      "operationId": "official.send-group-history.scopeEnabled",
+      "access": "mutation",
+      "authorization": "operator",
+      "description": "Prepare archive capture when enabling the plugin"
+    }
+  ]
 }

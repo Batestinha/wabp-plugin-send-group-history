@@ -1,3 +1,5 @@
+import { sendGroupHistoryExternalActions } from './operatorActions';
+import { historyConsoleOperationDeclarations } from './consoleOperationDeclarations';
 import type { PluginManifest } from '@wabs/plugin-sdk/manifest';
 import { sendGroupHistoryConfigSchema } from './config';
 import { sendGroupHistoryMessages } from './messages';
@@ -5,8 +7,10 @@ import { sendGroupHistoryMessages } from './messages';
 export const sendGroupHistoryManifest: PluginManifest = {
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
-  version: '0.4.3',
-  coreApiRange: '^0.3.0',
+  version: '0.4.4',
+  coreApiRange: '^0.3.5',
+  consoleOperations: historyConsoleOperationDeclarations,
+  configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
   messageNamespace: 'official.send-group-history',
   descriptionKey: 'official.send-group-history.description',
   defaultMessages: sendGroupHistoryMessages,
@@ -26,6 +30,7 @@ export const sendGroupHistoryManifest: PluginManifest = {
       availability: { invocation: 'either', permission: 'plugin.configure' }
     }]
   },
+  externalActions: sendGroupHistoryExternalActions,
   eventSubscriptions: ['participant.change'],
   requiredPermissions: ['plugin.configure'],
   requiredBotCapabilities: [],
