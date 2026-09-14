@@ -1,3 +1,4 @@
+import { resolvePluginTemplateMentions, combineResolvedTemplate, type TemplateMessageMentions } from '@wabs/plugin-sdk/templates';
 import type { PluginAction } from '@wabs/plugin-sdk/actions';
 import type { ArchiveHookPluginContext } from '@wabs/plugin-sdk/archive-hook-plugin';
 import type {
@@ -19,7 +20,7 @@ import {
   type SendGroupHistoryDocumentOmission
 } from './delivery';
 import { sendableGroupHistoryMessageCount } from './systemMessages';
-import { renderSendGroupHistoryIntroText } from './introText';
+import { renderSendGroupHistoryIntroFragment } from './introText';
 
 const pluginId = 'official.send-group-history';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -109,15 +110,16 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
         const t = await context.i18n.translatorForIdentity(recipient.identityId, event.scopeId);
         const introText = config.introText.trim();
         let renderedIntroText: string | undefined;
+        let captionMentions: TemplateMessageMentions = {};
         try {
-          renderedIntroText = introText.length > 0
-            ? renderIntroText(
-                introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
-                  ? t('official.send-group-history.introText')
-                  : introText,
-                event
-              )
-            : undefined;
+          if (introText) {
+            const { text, ...mentions } = combineResolvedTemplate(await resolvePluginTemplateMentions(renderSendGroupHistoryIntroFragment({
+              source: introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText,
+              groupDisplayName: event.groupDisplayName, chatId: event.chatId
+            }), { context, chatId: recipient.deliveryChatId, scopeId: event.scopeId, currentGroupId: event.chatId,
+              targets: { recipient: [{ identityId: recipient.identityId, wid: recipient.canonicalWid }] } }));
+            renderedIntroText = text; captionMentions = mentions;
+          }
         } catch {
           context.logger.warn({
             pluginId,
@@ -146,7 +148,7 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
               documentSet.format,
               document.part?.partNumber ?? documentIndex + 1
             ),
-            ...(index === 0 && text ? { text } : {}),
+            ...(index === 0 && text ? { text, ...captionMentions } : {}),
             file: {
               filename: document.filename,
               mimeType: document.mimeType,
@@ -211,14 +213,6 @@ function historySince(event: PluginParticipantChangeEvent, config: SendGroupHist
     return undefined;
   }
   return new Date(event.receivedAt.getTime() - config.historyDays * DAY_MS);
-}
-
-function renderIntroText(text: string, event: PluginParticipantChangeEvent): string {
-  return renderSendGroupHistoryIntroText({
-    source: text,
-    groupDisplayName: event.groupDisplayName,
-    chatId: event.chatId
-  });
 }
 
 function shouldSendForEvent(event: PluginParticipantChangeEvent, config: SendGroupHistoryConfig): boolean {

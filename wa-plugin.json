@@ -4,8 +4,8 @@
   "name": "Send Group History",
   "description": "Send existing archived group history to new members as private archive documents.",
   "kind": "managed_group",
-  "version": "0.4.4",
-  "coreApiRange": "^0.3.5",
+  "version": "0.5.0",
+  "coreApiRange": "^0.3.6",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
   "descriptionKey": "official.send-group-history.description",
@@ -100,6 +100,21 @@
           "helpText": "Send existing archived group history to new members.",
           "widget": "builder",
           "builderId": "official.send-group-history.prepare-history.v1",
+          "builderTemplateDialect": "conditional-values-v2",
+          "builderTemplateMentions": {
+            "people": true,
+            "groups": true,
+            "targets": [
+              {
+                "id": "recipient",
+                "label": "Recipient"
+              },
+              {
+                "id": "currentGroup",
+                "label": "Source group"
+              }
+            ]
+          },
           "builderEndpoints": {
             "state": "/api/v1/plugins/official.send-group-history/:scopeId/preparation",
             "preflight": "/api/v1/plugins/official.send-group-history/:scopeId/preflight",
@@ -322,20 +337,52 @@
           "helpText": "Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed.",
           "widget": "builder",
           "builderId": "official.send-group-history.prepare-history.v1",
-          "templateDialect": "conditional-presence-v1",
+          "builderTemplateDialect": "conditional-values-v2",
+          "builderTemplateMentions": {
+            "people": true,
+            "groups": true,
+            "targets": [
+              {
+                "id": "recipient",
+                "label": "Recipient"
+              },
+              {
+                "id": "currentGroup",
+                "label": "Source group"
+              }
+            ]
+          },
+          "templateDialect": "conditional-values-v2",
+          "templateMentions": {
+            "people": true,
+            "groups": true,
+            "targets": [
+              {
+                "id": "recipient",
+                "label": "Recipient"
+              },
+              {
+                "id": "currentGroup",
+                "label": "Source group"
+              }
+            ]
+          },
           "templateActivation": "when-condition-used",
           "templateVariables": [
             {
               "token": "groupDisplayName",
               "label": "Group display name",
-              "sampleValue": "Walking Club"
+              "sampleValue": "Walking Club",
+              "valueType": "text"
             }
           ],
           "templateConditionVariables": [
             {
               "token": "hasGroupDisplayName",
               "label": "Readable group name",
-              "sampleValue": "true"
+              "sampleValue": "true",
+              "valueType": "boolean",
+              "conditionSampleValue": true
             }
           ],
           "templateEmptyResult": "suppress"

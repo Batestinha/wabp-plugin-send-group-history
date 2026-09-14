@@ -13,3 +13,18 @@ For development, run `npm ci --ignore-scripts`, `npm test`, then `npm run releas
 `provenance.json` records imported source history and the exact SDK archive. Compiled runtime dependencies and their licenses are included in every release.
 
 Manual archive delivery and console readiness, preflight and preparation now belong to this package. The host checks account and scope coverage for every export and enforces document limits. The saved ensureArchivePolicy setting controls enrollment on enablement; existing capture coverage, privacy and retention settings are preserved.
+
+## Typed templates and WhatsApp mentions
+
+Message editors support exact choice and text comparisons, numeric thresholds,
+boolean values, availability checks, nested All/Any rules and Otherwise branches.
+Existing bare conditions retain their original presence meaning. Comparisons use
+canonical values separately from translated display text; missing values do not
+satisfy negative comparisons, while zero and false remain available.
+
+Type `@` in a supported message body or caption to insert a person, a group link,
+or a contextual recipient. Group links and native all-members mentions are distinct;
+the editor only offers targets supported by that destination. Mentions in hidden
+branches do not resolve or notify anyone. Native poll titles/options, group names
+and calendar text remain plain text. Durable delivery stores rendered text and
+recipient metadata together so retries keep the original notification intent.

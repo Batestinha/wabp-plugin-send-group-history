@@ -1,3 +1,4 @@
+import { resolvePluginTemplateMentions, combineResolvedTemplate, type PluginTemplateMentionContext, type TemplateMessageMentions } from '@wabs/plugin-sdk/templates';
 import type { PluginAuditLogger as AuditLogger, PluginScopedI18n as I18nService } from '@wabs/plugin-sdk/durable-plugin';
 import type { PluginOperatorArchiveService } from '@wabs/plugin-sdk/operator-actions';
 import type { StableIdentityAddressResolution } from '@wabs/plugin-sdk/identity';
@@ -16,13 +17,14 @@ import {
   sendGroupHistoryOmissionAuditMetadata
 } from './delivery';
 import { sendableGroupHistoryMessageCount } from './systemMessages';
-import { renderSendGroupHistoryIntroText } from './introText';
+import { renderSendGroupHistoryIntroFragment } from './introText';
 
 const PLUGIN_ID = 'official.send-group-history';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export async function deliverConfiguredGroupHistoryManually(input: {
   scopeId: string;
+  templateMentions?: PluginTemplateMentionContext | undefined;
   chatId: string;
   recipientWids: string[];
   config: SendGroupHistoryConfig;
@@ -117,16 +119,17 @@ export async function deliverConfiguredGroupHistoryManually(input: {
     const t = await input.i18n.translatorForIdentity(recipient.identityId, input.scopeId);
     const introText = input.config.introText.trim();
     let renderedIntroText: string | undefined;
+    let pendingMentions: TemplateMessageMentions = {};
     try {
-      renderedIntroText = introText.length > 0
-        ? renderIntroText(
-            introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT
-              ? t('official.send-group-history.introText')
-              : introText,
-            firstDocument.chatTitle,
-            input.chatId
-          )
-        : undefined;
+      if (introText) {
+        const { text, ...mentions } = combineResolvedTemplate(await resolvePluginTemplateMentions(renderSendGroupHistoryIntroFragment({
+          source: introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText,
+          groupDisplayName: firstDocument.chatTitle, chatId: input.chatId
+        }), { context: input.templateMentions ?? { resolveIdentityAddress: input.identityAddresses.resolveStableIdentity },
+          chatId: recipient.deliveryChatId, scopeId: input.scopeId, currentGroupId: input.chatId,
+          targets: { recipient: [{ identityId: recipient.identityId, wid: recipient.canonicalWid }] } }));
+        renderedIntroText = text; pendingMentions = mentions;
+      }
     } catch {
       await input.audit.record({
         scopeId: input.scopeId,
@@ -152,8 +155,9 @@ export async function deliverConfiguredGroupHistoryManually(input: {
         };
 
         try {
-          const sent = await sendManualBundle(input.transport, recipient, file, pendingCaption);
+          const sent = await sendManualBundle(input.transport, recipient, file, pendingCaption, pendingMentions);
           pendingCaption = undefined;
+          pendingMentions = {};
           await input.audit.record({
             scopeId: input.scopeId,
             action: 'send-group-history.manual_sent',
@@ -245,12 +249,13 @@ async function sendManualBundle(
   transport: Pick<TransportAdapter, 'sendDocument'>,
   recipient: StableIdentityAddressResolution,
   file: TransportFile,
-  text: string | undefined
+  text: string | undefined,
+  mentions: TemplateMessageMentions
 ): Promise<ManualBundleSendResult> {
   const caption = text?.trim() ? text : undefined;
   const documentSent = await transport.sendDocument(recipient.deliveryChatId, file, {
     waitForServerAck: true,
-    ...(caption ? { caption } : {})
+    ...(caption ? { caption, ...mentions } : {})
   });
   return {
     deliveryChatId: documentSent.deliveryChatId ?? recipient.deliveryChatId,
@@ -271,14 +276,6 @@ function manualTarget(
     requestedWid: recipient.originalWid,
     deliveryChatId: recipient.deliveryChatId
   };
-}
-
-function renderIntroText(text: string, groupDisplayName: string | undefined, chatId: string): string {
-  return renderSendGroupHistoryIntroText({
-    source: text,
-    groupDisplayName,
-    chatId
-  });
 }
 
 function errorMessage(error: unknown): string {

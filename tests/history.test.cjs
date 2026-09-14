@@ -15,7 +15,7 @@ function archive(format = 'txt') {
   return { filename: 'fixture.' + format, mimeType: 'text/plain', buffer: Buffer.from('fixture transcript'),
     messageCount: 2, messageTypeCounts: { chat: 2 }, placeholderMessageTypeCounts: {}, chatTitle: 'Fixture group', format };
 }
-function hooks(config, exportChatArchive) {
+function hooks(config, exportChatArchive, context = {}) {
   const values = new Map();
   return plugin.registerHooks({ pluginId: plugin.manifest.pluginId, manifest: plugin.manifest,
     enabledFor: async () => true, configFor: async () => config,
@@ -23,7 +23,7 @@ function hooks(config, exportChatArchive) {
     i18n: { translatorForIdentity: async () => key => plugin.manifest.defaultMessages[key] ?? key },
     ephemeralStore: { increment: async key => { const next = (values.get(key) ?? 0) + 1; values.set(key, next); return next; },
       delete: async key => Number(values.delete(key)) },
-    exportChatArchive
+    exportChatArchive, ...context
   });
 }
 
@@ -71,6 +71,30 @@ test('retries failed exports without permanently suppressing history', async () 
   const second = await provider.onParticipantChange(event());
   assert.equal(second[0].type, 'message.sendTextAndDocument');
   assert.equal(count, 2);
+});
+
+test('private archive captions mention the recipient and source group only on the first document', async () => {
+  const configured = { enabled: true, formats: ['txt', 'html'],
+    introText: '{{#if hasGroupDisplayName == true}}For {{mention target "recipient"}} from {{mention target "currentGroup"}}{{else}}{{mention person "unavailable"}}{{/if}}' };
+  const provider = hooks(configured, async input => archive(input.format), {
+    resolveStableIdentityById: async id => {
+      assert.equal(id, recipient.identityId);
+      return { identityId: id, mentionWid: '351912345678@c.us' };
+    },
+    coveredGroupsForScope: async scopeId => {
+      assert.equal(scopeId, 'fixture-scope');
+      return [{ groupWid: 'fixture@g.us', groupDisplayName: 'Fixture group' }];
+    }
+  });
+  const actions = (await provider.onParticipantChange(event())).filter(action => action.type === 'message.sendTextAndDocument');
+  assert.equal(actions[0].text, 'For @351912345678 from @fixture@g.us');
+  assert.deepEqual(actions[0].mentionedWids, ['351912345678@c.us']);
+  assert.deepEqual(actions[0].groupMentions, [{ groupJid: 'fixture@g.us', groupSubject: 'Fixture group' }]);
+  assert.equal(actions[0].mentionAll, undefined);
+  assert.equal(actions[1].text, undefined);
+  assert.equal(actions[1].mentionedWids, undefined);
+  assert.equal(actions[1].groupMentions, undefined);
+  assert.throws(() => plugin.manifest.configSchema.parse({ introText: '{{mention all}}' }), /mention/i);
 });
 
 test('does not export for exempt groups or the bot identity', async () => {

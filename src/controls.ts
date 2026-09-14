@@ -1,3 +1,4 @@
+import { historyTemplateDefinition } from './introText';
 import { defineControl } from '@wabs/plugin-sdk/controls';
 import type { ControlDescriptor, ControlSchemaMetadata, ControlUiHint } from '@wabs/plugin-sdk/controls-types';
 import { SEND_GROUP_HISTORY_EXPORT_FORMATS } from './config';
@@ -43,6 +44,8 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
   control('enabled', 'Enabled', 'Send existing archived group history to new members.', 10, { type: 'boolean' }, {
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1',
+    builderTemplateDialect: 'conditional-values-v2',
+    builderTemplateMentions: historyTemplateDefinition.mentions,
     builderEndpoints: {
       state: '/api/v1/plugins/official.send-group-history/:scopeId/preparation',
       preflight: '/api/v1/plugins/official.send-group-history/:scopeId/preflight',
@@ -73,13 +76,16 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
   control('introText', 'Archive caption', 'Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed.', 60, { type: 'string' }, {
     widget: 'builder',
     builderId: 'official.send-group-history.prepare-history.v1',
-    templateDialect: 'conditional-presence-v1',
+    builderTemplateDialect: 'conditional-values-v2',
+    builderTemplateMentions: historyTemplateDefinition.mentions,
+    templateDialect: 'conditional-values-v2',
+    templateMentions: historyTemplateDefinition.mentions,
     templateActivation: 'when-condition-used',
     templateVariables: [
-      { token: 'groupDisplayName', label: 'Group display name', sampleValue: 'Walking Club' }
+      { token: 'groupDisplayName', label: 'Group display name', sampleValue: 'Walking Club', valueType: 'text' }
     ],
     templateConditionVariables: [
-      { token: 'hasGroupDisplayName', label: 'Readable group name', sampleValue: 'true' }
+      { token: 'hasGroupDisplayName', label: 'Readable group name', sampleValue: 'true', valueType: 'boolean', conditionSampleValue: true }
     ],
     templateEmptyResult: 'suppress'
   }),
