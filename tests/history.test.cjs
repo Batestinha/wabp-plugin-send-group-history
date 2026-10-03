@@ -128,3 +128,42 @@ test('ships complete Portuguese defaults and matching console metadata without l
   assert.equal(metadata.operatorConsole.controls.length, 10);
   assert.equal(plugin.lifecycle, undefined);
 });
+
+const archiveUrl = 'https://archive.example.test/?chatId=internal-chat&workspace=scope%3Aworkspace';
+test('renders the corresponding archive link on automatic delivery, preserving the query string', async () => {
+  const provider = hooks({ enabled: true, formats: ['txt'], introText: 'Read {groupDisplayName}: {archiveUrl}' },
+    async () => ({ ...archive(), archiveUrl }));
+  const result = await provider.onParticipantChange(event());
+  assert.equal(result.find(action => action.type === 'message.sendTextAndDocument').text, `Read Fixture group: ${archiveUrl}`);
+});
+
+test('supports conditional archive links and hides them when the host has no published group archive', async () => {
+  const { renderSendGroupHistoryIntroText: render } = require('../dist/introText.js');
+  const source = '{{#if archiveUrl}}Read online: {archiveUrl}{{else}}Read the attachment{{/if}}';
+  assert.equal(render({ source, chatId: 'group@g.us', archiveUrl }), `Read online: ${archiveUrl}`);
+  assert.equal(render({ source, chatId: 'group@g.us' }), 'Read the attachment');
+  assert.equal(render({ source: '{archiveUrl}', chatId: 'group@g.us' }), '');
+});
+
+test('renders the group archive link for manual delivery, never the recipient chat ID', async () => {
+  const { deliverConfiguredGroupHistoryManually } = require('../dist/manualDelivery.js');
+  const sent = [];
+  await deliverConfiguredGroupHistoryManually({ scopeId: 'scope', chatId: 'group@g.us', recipientWids: ['user@lid'],
+    config: plugin.manifest.configSchema.parse({ enabled: true, formats: ['txt'], introText: 'Read: {archiveUrl}' }),
+    i18n: { translatorForIdentity: async () => key => key },
+    identityAddresses: { resolveStableIdentity: async () => recipient },
+    chatArchiveExporter: { exportChat: async () => ({ ...archive(), archiveUrl }) },
+    transport: { sendDocument: async (...args) => { sent.push(args); return {}; } }, audit: { record: async () => {} } });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0][0], recipient.deliveryChatId);
+  assert.equal(sent[0][2].caption, `Read: ${archiveUrl}`);
+});
+
+test('advertises the archive URL in both custom-builder and generic editor metadata', () => {
+  const metadata = JSON.parse(fs.readFileSync('wa-plugin.json'));
+  for (const path of ['enabled', 'introText']) {
+    const ui = metadata.operatorConsole.controls.find(control => control.path === path).ui;
+    assert.ok(ui.templateVariables.some(variable => variable.token === 'archiveUrl'));
+    assert.ok(ui.templateConditionVariables.some(variable => variable.token === 'archiveUrl'));
+  }
+});

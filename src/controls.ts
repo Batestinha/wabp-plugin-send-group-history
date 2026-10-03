@@ -3,6 +3,9 @@ import { defineControl } from '@wabs/plugin-sdk/controls';
 import type { ControlDescriptor, ControlSchemaMetadata, ControlUiHint } from '@wabs/plugin-sdk/controls-types';
 import { SEND_GROUP_HISTORY_EXPORT_FORMATS } from './config';
 
+const historyDisplayVariables = historyTemplateDefinition.variables.filter(variable => variable.token !== 'hasGroupDisplayName');
+const historyConditionVariables = [...historyTemplateDefinition.variables];
+
 const formatOptions = SEND_GROUP_HISTORY_EXPORT_FORMATS.map((format) => ({
   value: format,
   label: format.toUpperCase()
@@ -46,6 +49,8 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     builderId: 'official.send-group-history.prepare-history.v1',
     builderTemplateDialect: 'conditional-values-v2',
     builderTemplateMentions: historyTemplateDefinition.mentions,
+    templateVariables: historyDisplayVariables,
+    templateConditionVariables: historyConditionVariables,
     builderEndpoints: {
       state: '/api/v1/plugins/official.send-group-history/:scopeId/preparation',
       preflight: '/api/v1/plugins/official.send-group-history/:scopeId/preflight',
@@ -81,12 +86,8 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     templateDialect: 'conditional-values-v2',
     templateMentions: historyTemplateDefinition.mentions,
     templateActivation: 'when-condition-used',
-    templateVariables: [
-      { token: 'groupDisplayName', label: 'Group display name', sampleValue: 'Walking Club', valueType: 'text' }
-    ],
-    templateConditionVariables: [
-      { token: 'hasGroupDisplayName', label: 'Readable group name', sampleValue: 'true', valueType: 'boolean', conditionSampleValue: true }
-    ],
+    templateVariables: historyDisplayVariables,
+    templateConditionVariables: historyConditionVariables,
     templateEmptyResult: 'suppress'
   }),
   control(

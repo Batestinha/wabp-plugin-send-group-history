@@ -2,7 +2,7 @@
 
 Deliver retained group history to arriving members using host-generated archives and authorized delivery actions.
 
-Standalone WABS package `official.send-group-history` version `0.4.4`, requiring WABP core API `^0.3.5`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
+Standalone WABS package `official.send-group-history` version `0.5.1`, requiring WABP core API `^0.3.6`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
 
 WABP owns archive queries, rendering, identity resolution, localization, deduplication storage and delivery authorization. The plugin contains no archive database or browser renderer. Automatic arrivals return declared delivery and audit actions. Manual administration uses the host-provided transport and archive capabilities; neither path imports host source.
 
@@ -28,3 +28,19 @@ the editor only offers targets supported by that destination. Mentions in hidden
 branches do not resolve or notify anyone. Native poll titles/options, group names
 and calendar text remain plain text. Durable delivery stores rendered text and
 recipient metadata together so retries keep the original notification intent.
+
+## Group archive link
+
+Use `{archiveUrl}` in the Archive caption editor, for example:
+
+```text
+History for {groupDisplayName}: {archiveUrl}
+```
+
+The host supplies the matching group's internal archive chat ID and connected
+workspace in the configured Chat Archive URL. Automatic arrivals and manual
+history delivery use the same value. Opening the link requires the viewer's
+normal login and archive access. If the host has no published archive for the
+group, the value is empty; use `{{#if archiveUrl}}Read online: {archiveUrl}{{/if}}`
+to show text only when a link is available. The editor preview uses example IDs.
+Existing captions are preserved until edited.

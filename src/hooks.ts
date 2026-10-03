@@ -115,7 +115,7 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
           if (introText) {
             const { text, ...mentions } = combineResolvedTemplate(await resolvePluginTemplateMentions(renderSendGroupHistoryIntroFragment({
               source: introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText,
-              groupDisplayName: event.groupDisplayName, chatId: event.chatId
+              groupDisplayName: event.groupDisplayName, chatId: event.chatId, archiveUrl: firstDocument.archiveUrl
             }), { context, chatId: recipient.deliveryChatId, scopeId: event.scopeId, currentGroupId: event.chatId,
               targets: { recipient: [{ identityId: recipient.identityId, wid: recipient.canonicalWid }] } }));
             renderedIntroText = text; captionMentions = mentions;

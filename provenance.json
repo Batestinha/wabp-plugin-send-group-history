@@ -6,11 +6,11 @@
   "sourceTreeSha": "b9423872eac93c7aa73835bbf6775d8f7b38caf4",
   "extractedHistoryCommit": "f10f0274d1e147eba3e3c1d4f70ba54457bf52e1",
   "sdk": {
-    "version": "0.3.16",
-    "path": "vendor/wabs-plugin-sdk-0.3.16-b44eccf13337.tgz",
-    "sha256": "b44eccf13337c7b288d6ef0b6299f28df1f49a64ef31f05fd626fe696c45e181",
+    "version": "0.3.22",
+    "path": "vendor/wabs-plugin-sdk-0.3.22-444f8273f9a7.tgz",
+    "sha256": "444f8273f9a7b24fddaa3f94bcad0a01f8477ef8e1ad4e5f11c9d4c38647642f",
     "sourceDirectory": "packages/plugin-sdk",
-    "sourceCommit": "80b436afb9d8485f2b3d7bd389fc0a8f57cbc5f6"
+    "sourceCommit": "bf36294bd22db426839321d825a18ce18ec79026"
   },
   "previousStandaloneCommit": "2120860bed95c1e3a667e930a1c8e41445b640b1",
   "sourceImportTransform": "Replace relative packages/plugin-sdk/src imports with @wabs/plugin-sdk subpaths; retain other source bytes."

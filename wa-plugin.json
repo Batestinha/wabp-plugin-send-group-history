@@ -4,7 +4,7 @@
   "name": "Send Group History",
   "description": "Send existing archived group history to new members as private archive documents.",
   "kind": "managed_group",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "coreApiRange": "^0.3.6",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
@@ -115,6 +115,37 @@
               }
             ]
           },
+          "templateVariables": [
+            {
+              "token": "groupDisplayName",
+              "label": "Group display name",
+              "valueType": "text"
+            },
+            {
+              "token": "archiveUrl",
+              "label": "Group chat archive URL",
+              "valueType": "text",
+              "sampleValue": "https://chatarchive.topomare.de/?chatId=example-chat&workspace=scope%3Aexample-scope"
+            }
+          ],
+          "templateConditionVariables": [
+            {
+              "token": "groupDisplayName",
+              "label": "Group display name",
+              "valueType": "text"
+            },
+            {
+              "token": "archiveUrl",
+              "label": "Group chat archive URL",
+              "valueType": "text",
+              "sampleValue": "https://chatarchive.topomare.de/?chatId=example-chat&workspace=scope%3Aexample-scope"
+            },
+            {
+              "token": "hasGroupDisplayName",
+              "label": "Readable group name",
+              "valueType": "boolean"
+            }
+          ],
           "builderEndpoints": {
             "state": "/api/v1/plugins/official.send-group-history/:scopeId/preparation",
             "preflight": "/api/v1/plugins/official.send-group-history/:scopeId/preflight",
@@ -372,17 +403,31 @@
             {
               "token": "groupDisplayName",
               "label": "Group display name",
-              "sampleValue": "Walking Club",
               "valueType": "text"
+            },
+            {
+              "token": "archiveUrl",
+              "label": "Group chat archive URL",
+              "valueType": "text",
+              "sampleValue": "https://chatarchive.topomare.de/?chatId=example-chat&workspace=scope%3Aexample-scope"
             }
           ],
           "templateConditionVariables": [
             {
+              "token": "groupDisplayName",
+              "label": "Group display name",
+              "valueType": "text"
+            },
+            {
+              "token": "archiveUrl",
+              "label": "Group chat archive URL",
+              "valueType": "text",
+              "sampleValue": "https://chatarchive.topomare.de/?chatId=example-chat&workspace=scope%3Aexample-scope"
+            },
+            {
               "token": "hasGroupDisplayName",
               "label": "Readable group name",
-              "sampleValue": "true",
-              "valueType": "boolean",
-              "conditionSampleValue": true
+              "valueType": "boolean"
             }
           ],
           "templateEmptyResult": "suppress"

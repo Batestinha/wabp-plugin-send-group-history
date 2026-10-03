@@ -124,7 +124,7 @@ export async function deliverConfiguredGroupHistoryManually(input: {
       if (introText) {
         const { text, ...mentions } = combineResolvedTemplate(await resolvePluginTemplateMentions(renderSendGroupHistoryIntroFragment({
           source: introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText,
-          groupDisplayName: firstDocument.chatTitle, chatId: input.chatId
+          groupDisplayName: firstDocument.chatTitle, chatId: input.chatId, archiveUrl: firstDocument.archiveUrl
         }), { context: input.templateMentions ?? { resolveIdentityAddress: input.identityAddresses.resolveStableIdentity },
           chatId: recipient.deliveryChatId, scopeId: input.scopeId, currentGroupId: input.chatId,
           targets: { recipient: [{ identityId: recipient.identityId, wid: recipient.canonicalWid }] } }));
