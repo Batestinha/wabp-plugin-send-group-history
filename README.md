@@ -44,3 +44,13 @@ normal login and archive access. If the host has no published archive for the
 group, the value is empty; use `{{#if archiveUrl}}Read online: {archiveUrl}{{/if}}`
 to show text only when a link is available. The editor preview uses example IDs.
 Existing captions are preserved until edited.
+
+## Command interaction contract
+
+This release requires WABP core API 0.4 and the matching plugin SDK. Commands
+declare invocation eligibility and the audience and length of their conversation
+through `interactionPolicy`; plugins without commands retain an empty command
+list. The host owns group-to-PM notices, the two-question allowance for brief
+clarification, and routing across assistant execution and recovered flows. Personal
+guided workflows stay private, with domain publications delivered through their
+existing authorized group publication paths.
