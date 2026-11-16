@@ -7,8 +7,8 @@ import { sendGroupHistoryMessages } from './messages';
 export const sendGroupHistoryManifest: PluginManifest = {
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
-  version: '0.5.1',
-  coreApiRange: '^0.3.6',
+  version: '0.6.0',
+  coreApiRange: '^0.4.0',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
   messageNamespace: 'official.send-group-history',
