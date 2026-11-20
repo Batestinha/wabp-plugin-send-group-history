@@ -1,6 +1,6 @@
 {
   "name": "@wabs/plugin-send-group-history",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Send existing archived group history to new members as private archive documents.",
   "license": "MIT",
   "private": true,
