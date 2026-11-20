@@ -2,7 +2,7 @@
 
 Deliver retained group history to arriving members using host-generated archives and authorized delivery actions.
 
-Standalone WABS package `official.send-group-history` version `0.5.1`, requiring WABP core API `^0.3.6`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
+Standalone WABS package `official.send-group-history` version `0.5.2`, requiring WABP core API `^0.3.6`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
 
 WABP owns archive queries, rendering, identity resolution, localization, deduplication storage and delivery authorization. The plugin contains no archive database or browser renderer. Automatic arrivals return declared delivery and audit actions. Manual administration uses the host-provided transport and archive capabilities; neither path imports host source.
 
