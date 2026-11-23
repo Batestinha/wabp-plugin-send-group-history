@@ -4,7 +4,7 @@ Privately sends archived group history as files to eligible newcomers or to reci
 
 Members receive automatic files by default in enabled scopes. Use `/chatarchive delivery [on|off]` to inspect or change your preference in one community. The operator console and the administrator option in /chatarchive use the same manual delivery action. A member’s automatic delivery preference is independent of explicit sends, downloads and website access.
 
-Standalone WABS package `official.send-group-history` version `0.6.0`, requiring WABP core API `^0.3.30`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
+WABS distributes this plugin as `official.send-group-history`. The version and required WABP core API are listed in `wa-plugin.json`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
 
 WABP owns archive queries, rendering, identity resolution, localization, deduplication storage and delivery authorization. The plugin contains no archive database or browser renderer. Automatic arrivals return declared delivery and audit actions. Manual administration uses the host-provided transport and archive capabilities; neither path imports host source.
 
