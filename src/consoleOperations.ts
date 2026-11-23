@@ -1,3 +1,4 @@
+import { sendGroupHistoryManualInputSchema } from './operatorActions';
 import { z } from 'zod';
 import type { PluginConsoleContext, PluginConsoleArchive, PluginConsoleOperationRegistration } from '@wabs/plugin-sdk/console-operations';
 import { OUTBOUND_DOCUMENT_MAX_BYTES } from '@wabs/plugin-sdk/transport-limits';
@@ -197,6 +198,12 @@ export function registerSendGroupHistoryConsoleOperations(context: PluginConsole
     { operationId: 'official.send-group-history.sendGroupHistoryPreparationState', handler: input => operations.sendGroupHistoryPreparationState(input) },
     { operationId: 'official.send-group-history.sendGroupHistoryExportPreflight', handler: input => operations.sendGroupHistoryExportPreflight(input) },
     { operationId: 'official.send-group-history.ensureSendGroupHistoryPolicy', handler: input => operations.ensureSendGroupHistoryPolicy(input) },
+    { operationId: 'official.send-group-history.sendArchive', async handler(input) {
+      const request = sendGroupHistoryManualInputSchema.parse(input);
+      await context.assertScope(request.scopeId);
+      await context.audit('official.send-group-history.manual_requested', { chatId: request.chatId, recipients: request.recipientWids.length }, { scopeId: request.scopeId });
+      return context.executeRuntimeAction('official.send-group-history.manualSend', request);
+    } },
     { operationId: 'official.send-group-history.scopeEnabled', handler: input => operations.scopeEnabled(input) }
   ];
 }

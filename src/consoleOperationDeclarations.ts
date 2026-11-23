@@ -4,5 +4,6 @@ export const historyConsoleOperationDeclarations: PluginConsoleOperationDeclarat
   { operationId: 'official.send-group-history.sendGroupHistoryPreparationState', access: 'read', authorization: 'operator', description: 'Inspect archive delivery readiness' },
   { operationId: 'official.send-group-history.sendGroupHistoryExportPreflight', access: 'read', authorization: 'operator', description: 'Check archive document sizes and coverage' },
   { operationId: 'official.send-group-history.ensureSendGroupHistoryPolicy', access: 'mutation', authorization: 'operator', description: 'Enable archive capture for this scope' },
+  { operationId: 'official.send-group-history.sendArchive', access: 'mutation', authorization: 'operator', description: 'Deliver the selected group archive to an eligible private recipient' },
   { operationId: 'official.send-group-history.scopeEnabled', access: 'mutation', authorization: 'operator', description: 'Prepare archive capture when enabling the plugin' }
 ];

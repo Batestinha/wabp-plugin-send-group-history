@@ -157,7 +157,8 @@
             "state": "/api/v1/plugins/official.send-group-history/:scopeId/preparation",
             "preflight": "/api/v1/plugins/official.send-group-history/:scopeId/preflight",
             "ensurePolicy": "/api/v1/operator-console/actions/official.send-group-history.ensureArchivePolicy",
-            "replay": "/api/v1/operator-console/actions/chatArchive.replayNow"
+            "replay": "/api/v1/operator-console/actions/chatArchive.replayNow",
+            "send": "/api/v1/plugins/official.send-group-history/:scopeId/send"
           }
         },
         "dangerous": false,
@@ -511,6 +512,12 @@
       "access": "mutation",
       "authorization": "operator",
       "description": "Enable archive capture for this scope"
+    },
+    {
+      "operationId": "official.send-group-history.sendArchive",
+      "access": "mutation",
+      "authorization": "operator",
+      "description": "Deliver the selected group archive to an eligible private recipient"
     },
     {
       "operationId": "official.send-group-history.scopeEnabled",
