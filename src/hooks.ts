@@ -29,8 +29,7 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
   return {
     async onParticipantChange(event) {
       const config = parseSendGroupHistoryConfig(await context.configFor(
-        event.scopeId,
-        event.actorIdentity?.identityId
+        event.scopeId
       ));
       if (!config.enabled || !shouldSendForEvent(event, config)) {
         return;
@@ -47,12 +46,18 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
       const actions: PluginAction[] = [];
       const since = historySince(event, config);
       const botIdentityIds = new Set(event.botIdentityIds);
+      const preferenceScope = (await context.memberScopeFor?.(event.scopeId))?.id ?? event.scopeId;
       for (const recipient of event.affectedIdentities) {
         if (botIdentityIds.has(recipient.identityId)) {
           actions.push(auditSkipped(event, recipient, 'self-recipient'));
           continue;
         }
 
+        const preference = await context.configFor(preferenceScope, recipient.identityId);
+        if (preference.automaticHistory === false) {
+          actions.push(auditSkipped(event, recipient, 'unsubscribed'));
+          continue;
+        }
         const dedupeKey = deliveryDedupeKey(event, recipient);
         const deliveryAttempt = await context.ephemeralStore.increment(dedupeKey, config.dedupeTtlSeconds);
         if (deliveryAttempt !== 1) {
@@ -67,8 +72,7 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
           format,
           ...(since ? { since } : {}),
           maxBytes: OUTBOUND_DOCUMENT_MAX_BYTES,
-          overflowStrategy: 'truncate_oldest' as const,
-          skipAuthorization: true
+          overflowStrategy: 'truncate_oldest' as const
         });
         const preparation = context.exportChatArchiveSet
           ? await prepareSendGroupHistoryDocuments({
@@ -133,13 +137,14 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
             metadataJson: { reason: 'template-invalid' }
           });
         }
-        const configuredText = renderedIntroText?.trim() || undefined;
+        const configuredText = [renderedIntroText?.trim(), t('official.send-group-history.subscriptionHint')].filter(Boolean).join('\n\n');
         const text = appendSendGroupHistoryOmissionNotice(configuredText, preparation.omissions, t);
         const preparedDocuments = preparation.documentSets.flatMap((documentSet) =>
           documentSet.documents.map((document, documentIndex) => ({ documentSet, document, documentIndex }))
         );
         actions.push(...preparedDocuments.map(({ documentSet, document, documentIndex }, index): PluginAction => ({
             type: 'message.sendTextAndDocument',
+            archiveSourceChatId: event.chatId,
             chatId: recipient.deliveryChatId,
             requiredRemoteChatId: recipient.deliveryChatId,
             idempotencyKey: sendGroupHistoryDeliveryIdempotencyKey(

@@ -5,10 +5,12 @@ import { sendGroupHistoryConfigSchema } from './config';
 import { sendGroupHistoryMessages } from './messages';
 
 export const sendGroupHistoryManifest: PluginManifest = {
+  name: 'Archive Courier',
+  author: { name: 'Batestinha', url: 'https://github.com/Batestinha' },
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
-  version: '0.5.2',
-  coreApiRange: '^0.3.6',
+  version: '0.6.0',
+  coreApiRange: '^0.3.30',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
   messageNamespace: 'official.send-group-history',
@@ -20,7 +22,7 @@ export const sendGroupHistoryManifest: PluginManifest = {
     titleKey: 'official.send-group-history.help.feature.title',
     summaryKey: 'official.send-group-history.help.feature.summary',
     order: 110,
-    aliases: ['welcome history', 'archive delivery'],
+    aliases: ['Histórico de boas-vindas', 'Send Group History', 'welcome history', 'archive delivery'],
     topics: [{
       topicId: 'welcome-history',
       titleKey: 'official.send-group-history.help.delivery.title',

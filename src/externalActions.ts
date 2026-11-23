@@ -13,8 +13,10 @@ export function registerSendGroupHistoryExternalActions(context: PluginOperatorA
       if (!context.operator || !context.resolveIdentityAddress) throw new Error('Host operator archive capabilities are unavailable.');
       // Manual delivery is an explicit account administrator action, including disabled scope defaults.
       const config = parseSendGroupHistoryConfig(await context.configFor(request.scopeId));
+      const archive = context.operator.archive;
+      if (!archive.assertRecipient) throw new Error('Archive recipient authorization is unavailable.');
       return deliverConfiguredGroupHistoryManually({ ...request, config, i18n: context.i18n, templateMentions: context,
-        transport: context.operator.transport, chatArchiveExporter: context.operator.archive,
+        transport: context.operator.transport, chatArchiveExporter: archive, assertRecipient: archive.assertRecipient.bind(archive),
         identityAddresses: { resolveStableIdentity: context.resolveIdentityAddress }, audit: context.audit });
     }
   }];

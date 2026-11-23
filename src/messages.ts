@@ -1,8 +1,9 @@
 import type { MessageCatalog } from '@wabs/plugin-sdk/i18n';
 
 export const sendGroupHistoryMessages: MessageCatalog = {
+  'official.send-group-history.subscriptionHint': 'Change automatic group history with /chatarchive delivery off or /chatarchive delivery on.',
   'official.send-group-history.description': 'Send existing archived group history to new members as private archive documents.',
-  'official.send-group-history.help.feature.title': 'Welcome history',
+  'official.send-group-history.help.feature.title': 'Archive Courier',
   'official.send-group-history.help.feature.summary': 'Send retained group history privately to eligible new members.',
   'official.send-group-history.help.delivery.title': 'Deliver group history',
   'official.send-group-history.help.delivery.summary': 'Automatically export retained messages after a member joins, is added, or is approved.',
