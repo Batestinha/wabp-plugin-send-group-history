@@ -203,3 +203,16 @@ test('an explicit send ignores the join preference and rechecks each part after 
   assert.match(sent[0][2].idempotencyKey, /operator-request/);
   assert.ok(result.results.some(row => row.failed));
 });
+
+test('the console validates the operator scope and invokes the same explicit Courier action as the private menu', async () => {
+  const calls = [];
+  const operations = plugin.registerConsoleOperations({
+    archive: {}, assertScope: async id => { if (id !== 'owned') throw Error('Unknown scope'); },
+    audit: async () => {}, executeRuntimeAction: async (id, request) => { calls.push([id, request]); return { results: [] }; }
+  });
+  const send = operations.find(op => op.operationId === 'official.send-group-history.sendArchive').handler;
+  const request = { scopeId: 'owned', chatId: 'scope@g.us', recipientWids: ['member@lid'], requestId: 'operator-request' };
+  assert.deepEqual(await send(request), { results: [] });
+  await assert.rejects(send({ ...request, scopeId: 'foreign' }), /Unknown scope/);
+  assert.deepEqual(calls, [['official.send-group-history.manualSend', request]]);
+});

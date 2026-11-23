@@ -53,6 +53,7 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
     templateConditionVariables: historyConditionVariables,
     builderEndpoints: {
       state: '/api/v1/plugins/official.send-group-history/:scopeId/preparation',
+      send: '/api/v1/plugins/official.send-group-history/:scopeId/send',
       preflight: '/api/v1/plugins/official.send-group-history/:scopeId/preflight',
       ensurePolicy: '/api/v1/operator-console/actions/official.send-group-history.ensureArchivePolicy',
       replay: '/api/v1/operator-console/actions/chatArchive.replayNow'
