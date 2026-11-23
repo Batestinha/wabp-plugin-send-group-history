@@ -2,9 +2,9 @@ import type { MessageCatalog } from '@wabs/plugin-sdk/i18n';
 
 export const sendGroupHistoryMessages: MessageCatalog = {
   'official.send-group-history.subscriptionHint': 'Change automatic group history with /chatarchive delivery off or /chatarchive delivery on.',
-  'official.send-group-history.description': 'Send existing archived group history to new members as private archive documents.',
+  'official.send-group-history.description': 'Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.',
   'official.send-group-history.help.feature.title': 'Archive Courier',
-  'official.send-group-history.help.feature.summary': 'Send retained group history privately to eligible new members.',
+  'official.send-group-history.help.feature.summary': 'Use /chatarchive delivery to turn automatic history files on or off for a community. Administrators can also send a group archive to an eligible recipient.',
   'official.send-group-history.help.delivery.title': 'Deliver group history',
   'official.send-group-history.help.delivery.summary': 'Automatically export retained messages after a member joins, is added, or is approved.',
   'official.send-group-history.help.delivery.instruction': 'This feature attempts configured formats independently in order. If one file would exceed the fixed 100 MiB delivery limit, the oldest messages are omitted until the newest history fits. A format is omitted only if even its newest content cannot fit or preparation fails.',

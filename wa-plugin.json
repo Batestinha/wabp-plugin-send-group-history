@@ -6,9 +6,9 @@
     "name": "Batestinha",
     "url": "https://github.com/Batestinha"
   },
-  "description": "Send existing archived group history to new members as private archive documents.",
+  "description": "Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.",
   "kind": "managed_group",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "coreApiRange": "^0.3.30",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
