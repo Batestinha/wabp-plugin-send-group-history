@@ -475,7 +475,10 @@
       }
     ],
     "internalConfigPaths": [
-      "automaticHistory"
+      {
+        "path": "automaticHistory",
+        "reason": "Members manage automatic newcomer files with /chatarchive delivery for their community."
+      }
     ]
   },
   "externalActions": [
