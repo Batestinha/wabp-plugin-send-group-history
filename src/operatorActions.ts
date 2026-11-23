@@ -3,6 +3,7 @@ const runtimeGroupChatIdSchema = z.string().trim().regex(/^[^\s@]+@g\.us$/i).tra
 export const sendGroupHistoryManualInputSchema = z.object({
     scopeId: z.string().trim().min(1),
     chatId: runtimeGroupChatIdSchema,
+    requestId: z.string().trim().min(1).max(200).optional(),
     recipientWids: z.array(z.string().trim().min(1)).min(1).max(10)
   }).strict();
 export const sendGroupHistoryExternalActions = [{

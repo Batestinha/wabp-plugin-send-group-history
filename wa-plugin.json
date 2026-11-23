@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
   "pluginId": "official.send-group-history",
-  "name": "Send Group History",
+  "name": "Archive Courier",
   "author": {
     "name": "Batestinha",
     "url": "https://github.com/Batestinha"
   },
   "description": "Send existing archived group history to new members as private archive documents.",
   "kind": "managed_group",
-  "version": "0.5.2",
-  "coreApiRange": "^0.3.6",
+  "version": "0.6.0",
+  "coreApiRange": "^0.3.30",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
   "descriptionKey": "official.send-group-history.description",
@@ -20,6 +20,8 @@
     "summaryKey": "official.send-group-history.help.feature.summary",
     "order": 110,
     "aliases": [
+      "Histórico de boas-vindas",
+      "Send Group History",
       "welcome history",
       "archive delivery"
     ],
@@ -86,7 +88,8 @@
       "exemptGroupChatIds",
       "historyDays",
       "introText",
-      "dedupeTtlSeconds"
+      "dedupeTtlSeconds",
+      "automaticHistory"
     ],
     "controls": [
       {
@@ -95,7 +98,7 @@
         "id": "plugin.official.send-group-history.enabled",
         "label": "Enabled",
         "description": "Send existing archived group history to new members.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 10,
         "schema": {
           "type": "boolean"
@@ -171,7 +174,7 @@
         "id": "plugin.official.send-group-history.sendOnJoin",
         "label": "Direct joins",
         "description": "Send history when WhatsApp reports a direct join.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 20,
         "schema": {
           "type": "boolean"
@@ -194,7 +197,7 @@
         "id": "plugin.official.send-group-history.sendOnAdd",
         "label": "Admin-added members",
         "description": "Send history when a member is added by an admin.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 30,
         "schema": {
           "type": "boolean"
@@ -217,7 +220,7 @@
         "id": "plugin.official.send-group-history.sendOnApproval",
         "label": "Approved requests",
         "description": "Send history after an admin approves a membership request.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 40,
         "schema": {
           "type": "boolean"
@@ -240,7 +243,7 @@
         "id": "plugin.official.send-group-history.ensureArchivePolicy",
         "label": "Ensure archive policy",
         "description": "When preparing or enabling this plugin, include this scope in future chat archive capture when needed.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 50,
         "schema": {
           "type": "boolean"
@@ -263,7 +266,7 @@
         "id": "plugin.official.send-group-history.formats",
         "label": "Archive formats",
         "description": "One or more archive document formats to send to each new member.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 55,
         "schema": {
           "type": "array",
@@ -309,7 +312,7 @@
         "id": "plugin.official.send-group-history.exemptGroupChatIds",
         "label": "Exempt groups",
         "description": "Managed groups in this affected scope that should not receive automatic history delivery.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 56,
         "schema": {
           "type": "array",
@@ -336,7 +339,7 @@
         "id": "plugin.official.send-group-history.historyDays",
         "label": "History days",
         "description": "Number of days of archived history to send. Blank sends all available history.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 57,
         "schema": {
           "type": "number",
@@ -363,7 +366,7 @@
         "id": "plugin.official.send-group-history.introText",
         "label": "Archive caption",
         "description": "Caption sent with the first successfully prepared, within-limit archive document. Leave blank to send only the documents unless an omission notice is needed.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 60,
         "schema": {
           "type": "string"
@@ -450,7 +453,7 @@
         "id": "plugin.official.send-group-history.dedupeTtlSeconds",
         "label": "Dedupe TTL",
         "description": "Seconds to suppress duplicate delivery for the same scope, group, and user.",
-        "section": "Send Group History",
+        "section": "Archive Courier",
         "order": 70,
         "schema": {
           "type": "number",
@@ -471,7 +474,9 @@
         "relatedActionIds": []
       }
     ],
-    "internalConfigPaths": []
+    "internalConfigPaths": [
+      "automaticHistory"
+    ]
   },
   "externalActions": [
     {

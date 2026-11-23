@@ -27,6 +27,7 @@ export async function deliverConfiguredGroupHistoryManually(input: {
   templateMentions?: PluginTemplateMentionContext | undefined;
   chatId: string;
   recipientWids: string[];
+  requestId?: string | undefined;
   config: SendGroupHistoryConfig;
   i18n: Pick<I18nService, 'translatorForIdentity'>;
   transport: Pick<TransportAdapter, 'sendDocument'>;
@@ -34,6 +35,7 @@ export async function deliverConfiguredGroupHistoryManually(input: {
     & Partial<Pick<PluginOperatorArchiveService, 'exportChatSet'>>;
   identityAddresses: { resolveStableIdentity(wid: string): Promise<StableIdentityAddressResolution> };
   audit: AuditLogger;
+  assertRecipient(scopeId: string, chatId: string, recipientWid: string): Promise<void>;
   now?: Date | undefined;
 }): Promise<Record<string, unknown>> {
   const since = input.config.historyDays
@@ -155,7 +157,9 @@ export async function deliverConfiguredGroupHistoryManually(input: {
         };
 
         try {
-          const sent = await sendManualBundle(input.transport, recipient, file, pendingCaption, pendingMentions);
+          await input.assertRecipient(input.scopeId, input.chatId, recipient.deliveryChatId);
+          const sent = await sendManualBundle(input.transport, recipient, file, pendingCaption, pendingMentions,
+            input.requestId && ['archive-courier', input.requestId, input.scopeId, input.chatId, recipient.identityId, document.format, document.part?.partNumber ?? 1].join(':'));
           pendingCaption = undefined;
           pendingMentions = {};
           await input.audit.record({
@@ -250,11 +254,13 @@ async function sendManualBundle(
   recipient: StableIdentityAddressResolution,
   file: TransportFile,
   text: string | undefined,
-  mentions: TemplateMessageMentions
+  mentions: TemplateMessageMentions,
+  idempotencyKey?: string
 ): Promise<ManualBundleSendResult> {
   const caption = text?.trim() ? text : undefined;
   const documentSent = await transport.sendDocument(recipient.deliveryChatId, file, {
     waitForServerAck: true,
+    ...(idempotencyKey ? { idempotencyKey } : {}),
     ...(caption ? { caption, ...mentions } : {})
   });
   return {

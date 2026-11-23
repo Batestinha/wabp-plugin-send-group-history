@@ -26,7 +26,7 @@ function control(
     description,
     plane: 'plugin-scope-config',
     domain: 'official-plugin-settings',
-    section: 'Send Group History',
+    section: 'Archive Courier',
     order,
     visibility: 'bot_admin',
     configurable: true,

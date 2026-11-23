@@ -8,6 +8,7 @@ const sendGroupHistoryExportFormatSchema = z.enum(SEND_GROUP_HISTORY_EXPORT_FORM
 
 export const sendGroupHistoryConfigSchema = z.object({
   enabled: z.boolean().default(false),
+  automaticHistory: z.boolean().default(true),
   sendOnJoin: z.boolean().default(true),
   sendOnAdd: z.boolean().default(true),
   sendOnApproval: z.boolean().default(true),

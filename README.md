@@ -1,6 +1,8 @@
-# Send Group History
+# Archive Courier
 
 Deliver retained group history to arriving members using host-generated archives and authorized delivery actions.
+
+Members receive automatic files by default in enabled scopes. Use `/chatarchive delivery [on|off]` to inspect or change your preference in one community. Authorized manual sends, self-service downloads, and the website are available independently of this preference.
 
 Standalone WABS package `official.send-group-history` version `0.5.2`, requiring WABP core API `^0.3.6`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
 

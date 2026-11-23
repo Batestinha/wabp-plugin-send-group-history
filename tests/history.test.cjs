@@ -5,6 +5,7 @@ const plugin = require('../dist/index.js').default;
 const { prepareSendGroupHistoryDocuments } = require('../dist/delivery.js');
 const { ChatArchiveExportTooLargeError } = require('@wabs/plugin-sdk/chat-archive');
 
+const subscriptionHint = '\n\n' + plugin.manifest.defaultMessages['official.send-group-history.subscriptionHint'];
 const recipient = { identityId: 'fixture-identity', canonicalWid: 'fixture-user@c.us', sourceWid: 'fixture-user@lid', deliveryChatId: 'fixture-user@lid' };
 function event(overrides = {}) {
   return { pluginId: plugin.manifest.pluginId, scopeId: 'fixture-scope', eventId: 'fixture-join',
@@ -43,10 +44,11 @@ test('prepares authorized delivery actions for the stable recipient and suppress
   const first = await provider.onParticipantChange(event());
   const deliveries = first.filter(action => action.type === 'message.sendTextAndDocument');
   assert.equal(deliveries.length, 2);
-  assert.equal(deliveries[0].text, 'History for Fixture group');
+  assert.equal(deliveries[0].text, 'History for Fixture group' + subscriptionHint);
   assert.equal(deliveries[1].text, undefined);
   for (const action of deliveries) {
     assert.equal(action.chatId, recipient.deliveryChatId);
+    assert.equal(action.archiveSourceChatId, 'fixture@g.us');
     assert.equal(action.requiredRemoteChatId, recipient.deliveryChatId);
     assert.ok(action.idempotencyKey.includes('fixture-identity'));
     assert.equal(action.successAudit.metadataJson.messageCount, 2);
@@ -87,7 +89,7 @@ test('private archive captions mention the recipient and source group only on th
     }
   });
   const actions = (await provider.onParticipantChange(event())).filter(action => action.type === 'message.sendTextAndDocument');
-  assert.equal(actions[0].text, 'For @351912345678 from @fixture@g.us');
+  assert.equal(actions[0].text, 'For @351912345678 from @fixture@g.us' + subscriptionHint);
   assert.deepEqual(actions[0].mentionedWids, ['351912345678@c.us']);
   assert.deepEqual(actions[0].groupMentions, [{ groupJid: 'fixture@g.us', groupSubject: 'Fixture group' }]);
   assert.equal(actions[0].mentionAll, undefined);
@@ -134,7 +136,7 @@ test('renders the corresponding archive link on automatic delivery, preserving t
   const provider = hooks({ enabled: true, formats: ['txt'], introText: 'Read {groupDisplayName}: {archiveUrl}' },
     async () => ({ ...archive(), archiveUrl }));
   const result = await provider.onParticipantChange(event());
-  assert.equal(result.find(action => action.type === 'message.sendTextAndDocument').text, `Read Fixture group: ${archiveUrl}`);
+  assert.equal(result.find(action => action.type === 'message.sendTextAndDocument').text, `Read Fixture group: ${archiveUrl}` + subscriptionHint);
 });
 
 test('supports conditional archive links and hides them when the host has no published group archive', async () => {
@@ -148,7 +150,7 @@ test('supports conditional archive links and hides them when the host has no pub
 test('renders the group archive link for manual delivery, never the recipient chat ID', async () => {
   const { deliverConfiguredGroupHistoryManually } = require('../dist/manualDelivery.js');
   const sent = [];
-  await deliverConfiguredGroupHistoryManually({ scopeId: 'scope', chatId: 'group@g.us', recipientWids: ['user@lid'],
+  await deliverConfiguredGroupHistoryManually({ assertRecipient: async () => {}, scopeId: 'scope', chatId: 'group@g.us', recipientWids: ['user@lid'],
     config: plugin.manifest.configSchema.parse({ enabled: true, formats: ['txt'], introText: 'Read: {archiveUrl}' }),
     i18n: { translatorForIdentity: async () => key => key },
     identityAddresses: { resolveStableIdentity: async () => recipient },
@@ -166,4 +168,38 @@ test('advertises the archive URL in both custom-builder and generic editor metad
     assert.ok(ui.templateVariables.some(variable => variable.token === 'archiveUrl'));
     assert.ok(ui.templateConditionVariables.some(variable => variable.token === 'archiveUrl'));
   }
+});
+
+
+test('checks each arriving member’s scope preference before exporting', async () => {
+  const prepared = [];
+  const settings = { enabled: true, formats: ['txt'] };
+  const provider = hooks(settings, async input => { prepared.push(input); return archive(); }, {
+    configFor: async (scopeId, id) => ({ ...settings, automaticHistory: !(scopeId === 'fixture-scope' && id === recipient.identityId) })
+  });
+  const skipped = await provider.onParticipantChange(event());
+  assert.equal(skipped[0].metadataJson.reason, 'unsubscribed');
+  assert.deepEqual(prepared, []);
+  const sent = await provider.onParticipantChange(event({ scopeId: 'another-community' }));
+  assert.equal(sent[0].type, 'message.sendTextAndDocument');
+  assert.equal(sent[0].archiveSourceChatId, 'fixture@g.us');
+});
+
+test('an explicit send ignores the join preference and rechecks each part after preparation', async () => {
+  const { deliverConfiguredGroupHistoryManually } = require('../dist/manualDelivery.js');
+  const sent = [];
+  let checks = 0;
+  const result = await deliverConfiguredGroupHistoryManually({ scopeId: 'scope', chatId: 'group@g.us', recipientWids: ['user@lid'],
+    requestId: 'operator-request', config: plugin.manifest.configSchema.parse({ enabled: true, automaticHistory: false, formats: ['txt', 'html'] }),
+    i18n: { translatorForIdentity: async () => key => key }, identityAddresses: { resolveStableIdentity: async () => recipient },
+    chatArchiveExporter: { exportChat: async input => { assert.equal(input.actorWid, recipient.canonicalWid); return archive(input.format); } },
+    assertRecipient: async (scope, chat, wid) => {
+      assert.deepEqual([scope, chat, wid], ['scope', 'group@g.us', recipient.deliveryChatId]);
+      if (++checks > 1) throw new Error('Access revoked');
+    },
+    transport: { sendDocument: async (...args) => { sent.push(args); return { messageId: 'ok' }; } }, audit: { record: async () => {} } });
+  assert.equal(checks, 2);
+  assert.equal(sent.length, 1);
+  assert.match(sent[0][2].idempotencyKey, /operator-request/);
+  assert.ok(result.results.some(row => row.failed));
 });
