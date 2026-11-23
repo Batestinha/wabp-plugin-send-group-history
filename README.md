@@ -1,6 +1,6 @@
 # Archive Courier
 
-Deliver retained group history to arriving members using host-generated archives and authorized delivery actions.
+Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.
 
 Members receive automatic files by default in enabled scopes. Use `/chatarchive delivery [on|off]` to inspect or change your preference in one community. The operator console and the administrator option in /chatarchive use the same manual delivery action. A member’s automatic delivery preference is independent of explicit sends, downloads and website access.
 
