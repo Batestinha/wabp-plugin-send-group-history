@@ -8,7 +8,7 @@
   },
   "description": "Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.",
   "kind": "managed_group",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "coreApiRange": "^0.3.30",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
@@ -53,7 +53,7 @@
     "plugin.configure"
   ],
   "requiredBotCapabilities": [],
-  "dangerousActions": [],
+  "dangerousActions": ["group.sendHistoryBundle"],
   "backgroundJobs": [],
   "cancellation": {
     "workflows": []
@@ -83,6 +83,7 @@
       "sendOnJoin",
       "sendOnAdd",
       "sendOnApproval",
+      "sendNativeHistoryBundle",
       "ensureArchivePolicy",
       "formats",
       "exemptGroupChatIds",
@@ -228,6 +229,29 @@
         },
         "ui": {
           "helpText": "Send history after an admin approves a membership request.",
+          "widget": "toggle"
+        },
+        "dangerous": false,
+        "sensitivity": {
+          "sensitive": false,
+          "redact": "none"
+        },
+        "relatedCommandIds": [],
+        "relatedActionIds": []
+      },
+      {
+        "pluginId": "official.send-group-history",
+        "path": "sendNativeHistoryBundle",
+        "id": "plugin.official.send-group-history.sendNativeHistoryBundle",
+        "label": "WhatsApp history bundle",
+        "description": "Also ask WhatsApp Web to share its recent 100-message history bundle with the new member. The archive file is still sent.",
+        "section": "Archive Courier",
+        "order": 45,
+        "schema": {
+          "type": "boolean"
+        },
+        "ui": {
+          "helpText": "Also ask WhatsApp Web to share its recent 100-message history bundle with the new member. The archive file is still sent.",
           "widget": "toggle"
         },
         "dangerous": false,

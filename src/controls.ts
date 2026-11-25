@@ -62,6 +62,7 @@ export const sendGroupHistoryControls: ControlDescriptor[] = [
   control('sendOnJoin', 'Direct joins', 'Send history when WhatsApp reports a direct join.', 20, { type: 'boolean' }, { widget: 'toggle' }, true),
   control('sendOnAdd', 'Admin-added members', 'Send history when a member is added by an admin.', 30, { type: 'boolean' }, { widget: 'toggle' }, true),
   control('sendOnApproval', 'Approved requests', 'Send history after an admin approves a membership request.', 40, { type: 'boolean' }, { widget: 'toggle' }, true),
+  control('sendNativeHistoryBundle', 'WhatsApp history bundle', 'Also ask WhatsApp Web to share its recent 100-message history bundle with the new member. The archive file is still sent.', 45, { type: 'boolean' }, { widget: 'toggle' }, false),
   control('ensureArchivePolicy', 'Ensure archive policy', 'When preparing or enabling this plugin, include this scope in future chat archive capture when needed.', 50, { type: 'boolean' }, { widget: 'toggle' }, true),
   control('formats', 'Archive formats', 'One or more archive document formats to send to each new member.', 55, {
     type: 'array',

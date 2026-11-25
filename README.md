@@ -2,7 +2,7 @@
 
 Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.
 
-Members receive automatic files by default in enabled scopes. Use `/chatarchive delivery [on|off]` to inspect or change your preference in one community. The operator console and the administrator option in /chatarchive use the same manual delivery action. A member’s automatic delivery preference is independent of explicit sends, downloads and website access.
+Members receive automatic files by default in enabled scopes. Use `/chatarchive delivery [on|off]` to inspect or change your preference in one community. The WhatsApp history bundle setting is off by default. When it is on, each automatic file delivery also asks WhatsApp Web to share its recent 100-message bundle with that new member. The archive file is still sent. The operator console and the administrator option in /chatarchive use the same manual delivery action. A member’s automatic delivery preference is independent of explicit sends, downloads and website access.
 
 WABS distributes this plugin as `official.send-group-history`. The version and required WABP core API are listed in `wa-plugin.json`. The archive includes the SDK, Zod and Portuguese translations. Existing scope settings retain their identifiers, selected export formats, custom captions, exclusions, history window and enabled state.
 

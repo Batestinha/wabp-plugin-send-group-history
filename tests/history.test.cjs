@@ -127,7 +127,7 @@ test('ships complete Portuguese defaults and matching console metadata without l
   for (const key of Object.keys(plugin.manifest.defaultMessages)) assert.ok(pt[key]?.trim(), key);
   assert.equal(metadata.pluginId, plugin.manifest.pluginId);
   assert.equal(metadata.version, plugin.manifest.version);
-  assert.equal(metadata.operatorConsole.controls.length, 10);
+  assert.equal(metadata.operatorConsole.controls.length, 11);
   assert.equal(plugin.lifecycle, undefined);
 });
 
@@ -215,4 +215,53 @@ test('the console validates the operator scope and invokes the same explicit Cou
   assert.deepEqual(await send(request), { results: [] });
   await assert.rejects(send({ ...request, scopeId: 'foreign' }), /Unknown scope/);
   assert.deepEqual(calls, [['official.send-group-history.manualSend', request]]);
+});
+
+test('asks WhatsApp for its recent bundle after the archive file, and only for an automatic file', async () => {
+  const configured = { enabled: true, formats: ['txt'], introText: '', sendNativeHistoryBundle: true };
+  assert.equal(plugin.manifest.configSchema.parse({}).sendNativeHistoryBundle, false);
+  const metadata = JSON.parse(fs.readFileSync('wa-plugin.json'));
+  assert.ok(metadata.operatorConsole.configPaths.includes('sendNativeHistoryBundle'));
+  const bundleControl = metadata.operatorConsole.controls.find(control => control.path === 'sendNativeHistoryBundle');
+  assert.equal(bundleControl.order, 45);
+  assert.equal(bundleControl.ui.widget, 'toggle');
+
+  const provider = hooks(configured, async () => archive());
+  const actions = await provider.onParticipantChange(event());
+  const documentIndex = actions.findIndex(action => action.type === 'message.sendTextAndDocument');
+  const bundleIndex = actions.findIndex(action => action.type === 'group.sendHistoryBundle');
+  assert.ok(documentIndex >= 0);
+  assert.equal(bundleIndex, documentIndex + 1);
+  assert.deepEqual(actions[bundleIndex], {
+    type: 'group.sendHistoryBundle',
+    groupWid: 'fixture@g.us',
+    userWids: ['fixture-user@c.us'],
+    selectedMessageCount: 100,
+    reason: 'new-member'
+  });
+  const duplicate = await provider.onParticipantChange(event({ eventId: 'duplicate-bundle' }));
+  assert.equal(duplicate.some(action => action.type === 'group.sendHistoryBundle'), false);
+
+  const off = await hooks({ enabled: true, formats: ['txt'], introText: '' }, async () => archive())
+    .onParticipantChange(event({ eventId: 'bundle-off' }));
+  assert.equal(off.some(action => action.type === 'group.sendHistoryBundle'), false);
+  assert.equal(off.some(action => action.type === 'message.sendTextAndDocument'), true);
+
+  const systemOnly = await hooks(configured, async () => ({ ...archive(), messageCount: 1, messageTypeCounts: { gp2: 1 } }))
+    .onParticipantChange(event({ eventId: 'system-only' }));
+  assert.equal(systemOnly.some(action => action.type === 'message.sendTextAndDocument'), false);
+  assert.equal(systemOnly.some(action => action.type === 'group.sendHistoryBundle'), false);
+
+  const { deliverConfiguredGroupHistoryManually } = require('../dist/manualDelivery.js');
+  const sent = [];
+  await deliverConfiguredGroupHistoryManually({
+    assertRecipient: async () => {}, scopeId: 'scope', chatId: 'group@g.us', recipientWids: ['user@lid'],
+    config: plugin.manifest.configSchema.parse(configured),
+    i18n: { translatorForIdentity: async () => key => key },
+    identityAddresses: { resolveStableIdentity: async () => recipient },
+    chatArchiveExporter: { exportChat: async () => archive() },
+    transport: { sendDocument: async (...args) => { sent.push(args); return {}; } },
+    audit: { record: async () => {} }
+  });
+  assert.equal(sent.length, 1);
 });

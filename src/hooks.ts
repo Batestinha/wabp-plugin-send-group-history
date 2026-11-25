@@ -189,11 +189,28 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
               }
             }
           })));
+        if (config.sendNativeHistoryBundle) {
+          actions.push(nativeHistoryBundleAction(event, recipient));
+        }
       }
 
       return actions;
     }
   };
+}
+
+function nativeHistoryBundleAction(
+  event: PluginParticipantChangeEvent,
+  recipient: PluginParticipantIdentity
+): PluginAction {
+  // The vendored SDK 0.3.42 action union does not include this host action yet.
+  return {
+    type: 'group.sendHistoryBundle',
+    groupWid: event.chatId,
+    userWids: [recipient.canonicalWid],
+    selectedMessageCount: 100,
+    reason: 'new-member'
+  } as unknown as PluginAction;
 }
 
 function auditOmission(

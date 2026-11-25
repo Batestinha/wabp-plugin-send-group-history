@@ -1,6 +1,6 @@
 {
   "name": "@wabs/plugin-send-group-history",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.",
   "license": "MIT",
   "private": true,

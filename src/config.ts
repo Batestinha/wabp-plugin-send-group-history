@@ -12,6 +12,7 @@ export const sendGroupHistoryConfigSchema = z.object({
   sendOnJoin: z.boolean().default(true),
   sendOnAdd: z.boolean().default(true),
   sendOnApproval: z.boolean().default(true),
+  sendNativeHistoryBundle: z.boolean().default(false),
   ensureArchivePolicy: z.boolean().default(true),
   formats: z.array(sendGroupHistoryExportFormatSchema)
     .min(1, 'select at least one archive export format')
