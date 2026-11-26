@@ -9,7 +9,7 @@ export const sendGroupHistoryManifest: PluginManifest = {
   author: { name: 'Batestinha', url: 'https://github.com/Batestinha' },
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
-  version: '0.6.2',
+  version: '0.7.0',
   coreApiRange: '^0.3.30',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },

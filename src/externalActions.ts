@@ -15,7 +15,7 @@ export function registerSendGroupHistoryExternalActions(context: PluginOperatorA
       const config = parseSendGroupHistoryConfig(await context.configFor(request.scopeId));
       const archive = context.operator.archive;
       if (!archive.assertRecipient) throw new Error('Archive recipient authorization is unavailable.');
-      return deliverConfiguredGroupHistoryManually({ ...request, config, i18n: context.i18n, templateMentions: context,
+      return deliverConfiguredGroupHistoryManually({ ...request, config, i18n: context.i18n, templateMentions: context, services: context.services,
         transport: context.operator.transport, chatArchiveExporter: archive, assertRecipient: archive.assertRecipient.bind(archive),
         identityAddresses: { resolveStableIdentity: context.resolveIdentityAddress }, audit: context.audit });
     }

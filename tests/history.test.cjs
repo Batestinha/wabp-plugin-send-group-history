@@ -131,10 +131,15 @@ test('ships complete Portuguese defaults and matching console metadata without l
   assert.equal(plugin.lifecycle, undefined);
 });
 
-const archiveUrl = 'https://archive.example.test/?chatId=internal-chat&workspace=scope%3Aworkspace';
+const archiveUrl = 'https://archive.example.test/?chatId=internal-chat&workspace=scope%3Afixture-scope';
+const services = { call: async request => {
+  assert.deepEqual(request, { serviceId: 'official.integration-manager.message-links.v1', method: 'resolve',
+    scopeId: 'fixture-scope', input: { target: 'archiveOrigin' } });
+  return { url: 'https://archive.example.test' };
+} };
 test('renders the corresponding archive link on automatic delivery, preserving the query string', async () => {
   const provider = hooks({ enabled: true, formats: ['txt'], introText: 'Read {groupDisplayName}: {archiveUrl}' },
-    async () => ({ ...archive(), archiveUrl }));
+    async () => ({ ...archive(), archiveUrl }), { services });
   const result = await provider.onParticipantChange(event());
   assert.equal(result.find(action => action.type === 'message.sendTextAndDocument').text, `Read Fixture group: ${archiveUrl}` + subscriptionHint);
 });
@@ -150,7 +155,7 @@ test('supports conditional archive links and hides them when the host has no pub
 test('renders the group archive link for manual delivery, never the recipient chat ID', async () => {
   const { deliverConfiguredGroupHistoryManually } = require('../dist/manualDelivery.js');
   const sent = [];
-  await deliverConfiguredGroupHistoryManually({ assertRecipient: async () => {}, scopeId: 'scope', chatId: 'group@g.us', recipientWids: ['user@lid'],
+  await deliverConfiguredGroupHistoryManually({ assertRecipient: async () => {}, services, scopeId: 'fixture-scope', chatId: 'group@g.us', recipientWids: ['user@lid'],
     config: plugin.manifest.configSchema.parse({ enabled: true, formats: ['txt'], introText: 'Read: {archiveUrl}' }),
     i18n: { translatorForIdentity: async () => key => key },
     identityAddresses: { resolveStableIdentity: async () => recipient },
@@ -159,6 +164,17 @@ test('renders the group archive link for manual delivery, never the recipient ch
   assert.equal(sent.length, 1);
   assert.equal(sent[0][0], recipient.deliveryChatId);
   assert.equal(sent[0][2].caption, `Read: ${archiveUrl}`);
+});
+
+test('the authorized attachment survives a missing service, disconnection, or mismatched archive', async () => {
+  const introText = 'Attachment{{#if archiveUrl}} (read online){{/if}}';
+  for (const [candidate, provider] of [[archiveUrl, undefined], [archiveUrl, { call: async () => { throw Error('offline'); } }],
+    [archiveUrl, { call: async () => ({ url: null }) }], [archiveUrl.replace('internal-chat', ''), services],
+    [archiveUrl.replace('fixture-scope', 'other'), services], [archiveUrl.replace('archive.example', 'other.example'), services]]) {
+    const result = await hooks({ enabled: true, formats: ['txt'], introText }, async () => ({ ...archive(), archiveUrl: candidate }),
+      { services: provider }).onParticipantChange(event());
+    assert.equal(result.find(action => action.type === 'message.sendTextAndDocument').text, 'Attachment' + subscriptionHint);
+  }
 });
 
 test('advertises the archive URL in both custom-builder and generic editor metadata', () => {

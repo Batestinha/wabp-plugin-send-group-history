@@ -18,6 +18,8 @@ import {
 } from './delivery';
 import { sendableGroupHistoryMessageCount } from './systemMessages';
 import { renderSendGroupHistoryIntroFragment } from './introText';
+import { archiveLinkForCaption } from './archiveMessageLink';
+import type { PluginServiceCaller } from '@wabs/plugin-sdk/services';
 
 const PLUGIN_ID = 'official.send-group-history';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -25,6 +27,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export async function deliverConfiguredGroupHistoryManually(input: {
   scopeId: string;
   templateMentions?: PluginTemplateMentionContext | undefined;
+  services?: PluginServiceCaller | undefined;
   chatId: string;
   recipientWids: string[];
   requestId?: string | undefined;
@@ -124,9 +127,10 @@ export async function deliverConfiguredGroupHistoryManually(input: {
     let pendingMentions: TemplateMessageMentions = {};
     try {
       if (introText) {
+        const source = introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText;
         const { text, ...mentions } = combineResolvedTemplate(await resolvePluginTemplateMentions(renderSendGroupHistoryIntroFragment({
-          source: introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText,
-          groupDisplayName: firstDocument.chatTitle, chatId: input.chatId, archiveUrl: firstDocument.archiveUrl
+          source, groupDisplayName: firstDocument.chatTitle, chatId: input.chatId,
+          archiveUrl: await archiveLinkForCaption(input.services, source, input.scopeId, firstDocument.archiveUrl)
         }), { context: input.templateMentions ?? { resolveIdentityAddress: input.identityAddresses.resolveStableIdentity },
           chatId: recipient.deliveryChatId, scopeId: input.scopeId, currentGroupId: input.chatId,
           targets: { recipient: [{ identityId: recipient.identityId, wid: recipient.canonicalWid }] } }));

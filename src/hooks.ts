@@ -21,6 +21,7 @@ import {
 } from './delivery';
 import { sendableGroupHistoryMessageCount } from './systemMessages';
 import { renderSendGroupHistoryIntroFragment } from './introText';
+import { archiveLinkForCaption } from './archiveMessageLink';
 
 const pluginId = 'official.send-group-history';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -117,9 +118,10 @@ export function createSendGroupHistoryHooks(context: ArchiveHookPluginContext): 
         let captionMentions: TemplateMessageMentions = {};
         try {
           if (introText) {
+            const source = introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText;
             const { text, ...mentions } = combineResolvedTemplate(await resolvePluginTemplateMentions(renderSendGroupHistoryIntroFragment({
-              source: introText === DEFAULT_ARCHIVE_HISTORY_INTRO_TEXT ? t('official.send-group-history.introText') : introText,
-              groupDisplayName: event.groupDisplayName, chatId: event.chatId, archiveUrl: firstDocument.archiveUrl
+              source, groupDisplayName: event.groupDisplayName, chatId: event.chatId,
+              archiveUrl: await archiveLinkForCaption(context.services, source, event.scopeId, firstDocument.archiveUrl)
             }), { context, chatId: recipient.deliveryChatId, scopeId: event.scopeId, currentGroupId: event.chatId,
               targets: { recipient: [{ identityId: recipient.identityId, wid: recipient.canonicalWid }] } }));
             renderedIntroText = text; captionMentions = mentions;
