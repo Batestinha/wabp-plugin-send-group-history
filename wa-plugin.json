@@ -8,8 +8,8 @@
   },
   "description": "Privately delivers readable group archives. Newcomers can receive files automatically, and an authorized requester can send an archive to an eligible recipient.",
   "kind": "managed_group",
-  "version": "0.8.1",
-  "coreApiRange": "^0.3.33",
+  "version": "0.8.2",
+  "coreApiRange": "^0.3.34",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
   "descriptionKey": "official.send-group-history.description",
@@ -616,5 +616,6 @@
       "description": "Default access is for the bound bot owner, active subowners, and people with a bot-administrator access record. The recipient must also be eligible to read the archive.",
       "defaultAccess": "bot-admin"
     }
-  ]
+  ],
+  "operationCatalogVersion": 1
 }

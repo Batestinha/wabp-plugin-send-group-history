@@ -9,6 +9,7 @@ const { dependencies, integrations, operationPermissions, requiredPermissions } 
 const relationships = { dependencies, integrations, operationPermissions };
 
 export const sendGroupHistoryManifest: PluginManifest = {
+  ...{ operationCatalogVersion: require('../wa-plugin.json').operationCatalogVersion },
   name: 'Archive Courier',
   author: { name: 'Batestinha', url: 'https://github.com/Batestinha' },
   pluginId: 'official.send-group-history',
@@ -16,8 +17,8 @@ export const sendGroupHistoryManifest: PluginManifest = {
   ...relationships,
   services: [historyService],
   memberSubscriptions: [historyOffer],
-  version: '0.8.1',
-  coreApiRange: '^0.3.33',
+  version: '0.8.2',
+  coreApiRange: '^0.3.34',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
   messageNamespace: 'official.send-group-history',
