@@ -5,8 +5,8 @@ import type { PluginManifest } from '@wabs/plugin-sdk/manifest';
 import { sendGroupHistoryConfigSchema } from './config';
 import { sendGroupHistoryMessages } from './messages';
 
-const { dependencies, integrations } = require('../wa-plugin.json');
-const relationships = { dependencies, integrations };
+const { dependencies, integrations, operationPermissions, requiredPermissions } = require('../wa-plugin.json');
+const relationships = { dependencies, integrations, operationPermissions };
 
 export const sendGroupHistoryManifest: PluginManifest = {
   name: 'Archive Courier',
@@ -16,8 +16,8 @@ export const sendGroupHistoryManifest: PluginManifest = {
   ...relationships,
   services: [historyService],
   memberSubscriptions: [historyOffer],
-  version: '0.8.0',
-  coreApiRange: '^0.3.32',
+  version: '0.8.1',
+  coreApiRange: '^0.3.33',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
   messageNamespace: 'official.send-group-history',
@@ -41,7 +41,7 @@ export const sendGroupHistoryManifest: PluginManifest = {
   },
   externalActions: sendGroupHistoryExternalActions,
   eventSubscriptions: ['participant.change'],
-  requiredPermissions: ['plugin.configure'],
+  requiredPermissions,
   requiredBotCapabilities: [],
   configSchema: sendGroupHistoryConfigSchema,
   dangerousActions: ['group.sendHistoryBundle'],

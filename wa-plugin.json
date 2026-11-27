@@ -6,10 +6,10 @@
     "name": "Batestinha",
     "url": "https://github.com/Batestinha"
   },
-  "description": "Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.",
+  "description": "Privately delivers readable group archives. Newcomers can receive files automatically, and an authorized requester can send an archive to an eligible recipient.",
   "kind": "managed_group",
-  "version": "0.8.0",
-  "coreApiRange": "^0.3.32",
+  "version": "0.8.1",
+  "coreApiRange": "^0.3.33",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
   "descriptionKey": "official.send-group-history.description",
@@ -50,7 +50,9 @@
     "participant.change"
   ],
   "requiredPermissions": [
-    "plugin.configure"
+    "plugin.configure",
+    "plugin.send-group-history.get",
+    "plugin.send-group-history.send"
   ],
   "requiredBotCapabilities": [],
   "dangerousActions": [
@@ -597,6 +599,22 @@
           "access": "mutation"
         }
       ]
+    }
+  ],
+  "operationPermissions": [
+    {
+      "id": "official.send-group-history.get",
+      "action": "plugin.send-group-history.get",
+      "title": "Get my own readable archive",
+      "description": "Allows private delivery of PDF, HTML, or a Chatarchive link when the requester may read the archive.",
+      "defaultAccess": "resource-visibility"
+    },
+    {
+      "id": "official.send-group-history.send",
+      "action": "plugin.send-group-history.send",
+      "title": "Send another person a group archive",
+      "description": "Default access is for the bound bot owner, active subowners, and people with a bot-administrator access record. The recipient must also be eligible to read the archive.",
+      "defaultAccess": "bot-admin"
     }
   ]
 }

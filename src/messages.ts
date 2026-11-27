@@ -5,7 +5,7 @@ export const sendGroupHistoryMessages: MessageCatalog = {
   "official.send-group-history.subscription.off": "Off",
   "official.send-group-history.subscription.on": "On",
   'official.send-group-history.subscriptionHint': 'Change automatic group history with /chatarchive delivery off or /chatarchive delivery on.',
-  'official.send-group-history.description': 'Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.',
+  'official.send-group-history.description': 'Privately delivers readable group archives. Newcomers can receive files automatically, and an authorized requester can send an archive to an eligible recipient.',
   'official.send-group-history.help.feature.title': 'Archive Courier',
   'official.send-group-history.help.feature.summary': 'Use /chatarchive delivery to turn automatic history files on or off for a community. Administrators can also send a group archive to an eligible recipient.',
   'official.send-group-history.help.delivery.title': 'Deliver group history',
