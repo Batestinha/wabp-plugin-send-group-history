@@ -8,8 +8,8 @@
   },
   "description": "Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.",
   "kind": "managed_group",
-  "version": "0.7.0",
-  "coreApiRange": "^0.3.30",
+  "version": "0.7.1",
+  "coreApiRange": "^0.3.31",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
   "descriptionKey": "official.send-group-history.description",
@@ -59,6 +59,18 @@
     "workflows": []
   },
   "dependencies": [],
+  "integrations": [
+    {
+      "pluginId": "official.chat-archive",
+      "versionRange": "^1.0.0",
+      "description": "Adds a verified link to read the delivered chat online when browser links are enabled."
+    },
+    {
+      "pluginId": "official.integration-manager",
+      "versionRange": ">=1.2.0",
+      "description": "Verifies that an online archive link belongs to the connected Workspace."
+    }
+  ],
   "assistant": {
     "summary": "Automatically sends at most one up-to-100-MiB archive document per format to new members, omitting the oldest messages when needed so the newest history fits.",
     "useCases": [
