@@ -4,12 +4,16 @@ import type { PluginManifest } from '@wabs/plugin-sdk/manifest';
 import { sendGroupHistoryConfigSchema } from './config';
 import { sendGroupHistoryMessages } from './messages';
 
+const { dependencies, integrations } = require('../wa-plugin.json');
+const relationships = { dependencies, integrations };
+
 export const sendGroupHistoryManifest: PluginManifest = {
   name: 'Archive Courier',
   author: { name: 'Batestinha', url: 'https://github.com/Batestinha' },
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
-  version: '0.7.0',
+  ...relationships,
+  version: '0.7.1',
   coreApiRange: '^0.3.30',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
