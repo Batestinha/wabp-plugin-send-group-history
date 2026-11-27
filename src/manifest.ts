@@ -14,7 +14,7 @@ export const sendGroupHistoryManifest: PluginManifest = {
   kind: 'managed_group',
   ...relationships,
   version: '0.7.1',
-  coreApiRange: '^0.3.30',
+  coreApiRange: '^0.3.31',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
   messageNamespace: 'official.send-group-history',
