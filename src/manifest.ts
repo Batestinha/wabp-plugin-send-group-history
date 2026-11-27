@@ -1,4 +1,5 @@
 import { sendGroupHistoryExternalActions } from './operatorActions';
+import { historyOffer, historyService } from './subscriptions';
 import { historyConsoleOperationDeclarations } from './consoleOperationDeclarations';
 import type { PluginManifest } from '@wabs/plugin-sdk/manifest';
 import { sendGroupHistoryConfigSchema } from './config';
@@ -13,8 +14,10 @@ export const sendGroupHistoryManifest: PluginManifest = {
   pluginId: 'official.send-group-history',
   kind: 'managed_group',
   ...relationships,
-  version: '0.7.1',
-  coreApiRange: '^0.3.31',
+  services: [historyService],
+  memberSubscriptions: [historyOffer],
+  version: '0.8.0',
+  coreApiRange: '^0.3.32',
   consoleOperations: historyConsoleOperationDeclarations,
   configuration: { scopeEnabledOperationId: 'official.send-group-history.scopeEnabled', permissionDeclarations: [] },
   messageNamespace: 'official.send-group-history',

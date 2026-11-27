@@ -1,6 +1,9 @@
 import type { MessageCatalog } from '@wabs/plugin-sdk/i18n';
 
 export const sendGroupHistoryMessages: MessageCatalog = {
+  "official.send-group-history.subscription.title": "Automatic group history",
+  "official.send-group-history.subscription.off": "Off",
+  "official.send-group-history.subscription.on": "On",
   'official.send-group-history.subscriptionHint': 'Change automatic group history with /chatarchive delivery off or /chatarchive delivery on.',
   'official.send-group-history.description': 'Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.',
   'official.send-group-history.help.feature.title': 'Archive Courier',

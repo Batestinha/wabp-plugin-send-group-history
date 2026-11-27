@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "pluginId": "official.send-group-history",
   "name": "Archive Courier",
   "author": {
@@ -8,8 +8,8 @@
   },
   "description": "Privately sends archived group history as files to eligible newcomers or to recipients selected by an administrator. Members manage automatic delivery with /chatarchive delivery.",
   "kind": "managed_group",
-  "version": "0.7.1",
-  "coreApiRange": "^0.3.31",
+  "version": "0.8.0",
+  "coreApiRange": "^0.3.32",
   "entrypoint": "dist/index.js",
   "messageNamespace": "official.send-group-history",
   "descriptionKey": "official.send-group-history.description",
@@ -53,7 +53,9 @@
     "plugin.configure"
   ],
   "requiredBotCapabilities": [],
-  "dangerousActions": ["group.sendHistoryBundle"],
+  "dangerousActions": [
+    "group.sendHistoryBundle"
+  ],
   "backgroundJobs": [],
   "cancellation": {
     "workflows": []
@@ -560,6 +562,41 @@
       "access": "mutation",
       "authorization": "operator",
       "description": "Prepare archive capture when enabling the plugin"
+    }
+  ],
+  "memberSubscriptions": [
+    {
+      "id": "history",
+      "kind": "internal",
+      "scope": "community",
+      "serviceId": "official.send-group-history.subscriptions.v1",
+      "labelKey": "official.send-group-history.subscription.title",
+      "booleanSetting": "automaticHistory",
+      "choices": [
+        {
+          "id": "off",
+          "labelKey": "official.send-group-history.subscription.off"
+        },
+        {
+          "id": "on",
+          "labelKey": "official.send-group-history.subscription.on"
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "serviceId": "official.send-group-history.subscriptions.v1",
+      "methods": [
+        {
+          "name": "read",
+          "access": "read"
+        },
+        {
+          "name": "set",
+          "access": "mutation"
+        }
+      ]
     }
   ]
 }
